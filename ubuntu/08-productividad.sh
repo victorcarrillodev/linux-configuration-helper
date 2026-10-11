@@ -3,8 +3,8 @@
 
 section 08 "PRODUCTIVIDAD" "AppFlowy (alternativa de código abierto a Notion)"
 
-# El paquete se llama "AppFlowy" (con mayúsculas) y deja el ejecutable en /usr/lib/AppFlowy
-v_appflowy() { pkg_installed AppFlowy && [ -x /usr/lib/AppFlowy/AppFlowy ]; }
+# dpkg registra el paquete en minúsculas ("appflowy") y deja el ejecutable en /usr/lib/AppFlowy
+v_appflowy() { pkg_installed appflowy && [ -x /usr/lib/AppFlowy/AppFlowy ]; }
 i_appflowy() {
     if [ "$(dpkg --print-architecture)" != "amd64" ]; then
         warn "AppFlowy solo publica .deb para amd64 (este equipo es $(dpkg --print-architecture))."

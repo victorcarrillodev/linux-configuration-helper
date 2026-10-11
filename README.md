@@ -9,11 +9,12 @@ para instalar en el **escritorio** o en una **USB** portable. Un solo comando:
 
 Al ejecutarlo muestra un banner y pregunta:
 
-1. **¿Qué sistema?** Ubuntu (linux conf) o Manjaro (manjaro conf). Detecta el actual y lo propone.
+1. **¿Qué sistema?** Ubuntu (linux conf) o Manjaro (manjaro conf). Detecta el actual y lo propone;
+   si eliges uno que no corresponde a este equipo (p. ej. Ubuntu en Manjaro), vuelve a preguntar.
 2. **¿Dónde se instala?** Escritorio (disco interno) o USB (aplica optimizaciones de menos escrituras).
 
-Después audita qué de la lista ya está instalado, instala solo lo pendiente y, al terminar,
-te dice qué pasos debes hacer tú y te pregunta si quieres borrar el instalador.
+Después audita qué de la lista ya está instalado (sin pedir sudo), te pide confirmación y entonces instala
+solo lo pendiente. Al terminar, te dice qué pasos debes hacer tú y te pregunta si quieres borrar el instalador.
 
 ## Cómo funciona
 
@@ -44,6 +45,7 @@ comun/               Módulos compartidos por ambos sistemas
   00-modo-usb.sh       USB: optimizaciones · Escritorio: revierte las de USB
   10-herramientas-comunes.sh  instaladores idénticos en ambas distros (herdr)
   99-pasos-manuales.sh pasos que debe hacer el usuario al final
+INSTALACIONES.md     Qué se instala solo en Ubuntu, solo en Manjaro y en las dos
 ubuntu/              «linux conf» (apt, snap, repos externos)
   distro.sh            adaptador de paquetes (apt)
   01-sistema … 09-limpieza
@@ -84,6 +86,7 @@ En el módulo que corresponda (`ubuntu/` o `manjaro/`):
 # Paquete simple: id, etiqueta, origen (repo|aur), comando a verificar, paquete(s)
 register_pkg  vlc   "VLC"      repo vlc vlc
 register_aur  cursor "Cursor"  cursor cursor-bin       # AUR (depende de yay)
+register_npm  playwright-cli "Playwright CLI" playwright-cli "@playwright/cli@latest" nvm-node   # npm -g (+ dependencia)
 
 # Caso general: una función que verifica y otra que instala
 v_mi_app() { cmd_works mi-app --version; }

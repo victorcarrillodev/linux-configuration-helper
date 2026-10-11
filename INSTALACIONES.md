@@ -50,7 +50,7 @@ El programa es el mismo; cambia **cómo** se instala en cada sistema.
 | Codex CLI | `npm -g @openai/codex` |
 | Hermes Agent (Nous Research) | instalador oficial (sin asistente interactivo; queda como paso manual) |
 | Visual Studio Code | repositorio apt de Microsoft |
-| Variety + wallpapers | Variety y el repositorio de fondos clonado en `~/wallpapers` |
+| Variety + wallpapers | Variety y el repositorio de fondos clonado en `~/wallpapers` (~260 MB, por eso tarda) |
 | Terminal | Zsh, Oh My Zsh, Powerlevel10k, autosuggestions y syntax-highlighting, fuentes CascadiaCode NF y MesloLGS NF, Wave Terminal, `~/.zshrc` con banner, Zsh como shell por defecto |
 | LibreOffice | PPA oficial, en español |
 | Códecs multimedia | ffmpeg, GStreamer, `ubuntu-restricted-extras` |
