@@ -35,6 +35,7 @@ solo lo pendiente. Al terminar, te dice qué pasos debes hacer tú y te pregunta
 
 ```
 init.sh              Punto de entrada único (menús, opciones, flujo)
+appflowy-data-backup.sh  Respaldo/restauración de AppFlowy en GitHub + daemon semanal (se instala en ~/.local/bin)
 lib/                 Motor
   ui.sh                banner, títulos grandes, mensajes, pausa
   menu.sh              preguntas: sistema, destino, confirmaciones
@@ -62,6 +63,12 @@ lo que se instala **solo en Ubuntu**, **solo en Manjaro** y **en las dos distros
 
 **Modo USB** (ambos sistemas): sysctl de escritura, logs en RAM, planificador BFQ, zram, `noatime`,
 `/tmp` en RAM y `profile-sync-daemon`. **Modo Escritorio** revierte lo anterior si se había aplicado.
+
+## Respaldo de AppFlowy
+
+`appflowy-data-backup.sh` hace un respaldo semanal de tus notas de AppFlowy a un repositorio **privado** de GitHub,
+funciona como daemon y tiene un menú para respaldar o restaurar. `init.sh` lo instala y lo activa en ambas distros.
+Detalles y advertencias de seguridad en [INSTALACIONES.md](INSTALACIONES.md#respaldo-semanal-de-appflowy-a-github-appflowy-data-backupsh).
 
 ## Opciones
 

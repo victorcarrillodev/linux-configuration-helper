@@ -36,6 +36,7 @@ El programa es el mismo; cambia **cómo** se instala en cada sistema.
 | **Playwright CLI (`playwright-cli`)** | `npm -g @playwright/cli` | `npm -g @playwright/cli` (prefijo `~/.npm-global`, sin sudo) |
 | **herdr** (multiplexor para agentes de IA) | instalador oficial → `~/.local/bin` | instalador oficial → `~/.local/bin` |
 | **AppFlowy** | `.deb` oficial de GitHub (última versión) | AUR `appflowy-bin` |
+| **Respaldo semanal de AppFlowy** (`appflowy-data-backup.sh` + daemon) | script copiado a `~/.local/bin`, servicio de usuario de systemd y `sqlite3` | igual (con `sqlite`) |
 | Limpieza final | `autoremove` + `autoclean` + `clean` | caché de pacman/yay + paquetes huérfanos |
 | Modo **Escritorio / USB** | idéntico en ambas: USB aplica sysctl, logs en RAM, BFQ, zram, `noatime`, `/tmp` en RAM y profile-sync-daemon; Escritorio revierte lo anterior | |
 
@@ -84,3 +85,37 @@ El programa es el mismo; cambia **cómo** se instala en cada sistema.
 diff <(./init.sh --listar --sistema ubuntu  | awk 'NF>=2 && $1 ~ /^[a-z][a-z0-9-]+$/ {print $1}' | sort) \
      <(./init.sh --listar --sistema manjaro | awk 'NF>=2 && $1 ~ /^[a-z][a-z0-9-]+$/ {print $1}' | sort)
 ```
+
+---
+
+## Respaldo semanal de AppFlowy a GitHub (`appflowy-data-backup.sh`)
+
+Se instala igual en las dos distros y se ejecuta con ese nombre desde cualquier terminal
+(queda en `~/.local/bin`). Tiene un **menú**: hacer una copia de seguridad ahora, restaurar tu información,
+ver los respaldos, y activar o desactivar el respaldo semanal automático.
+
+```bash
+appflowy-data-backup.sh                 # menú interactivo
+appflowy-data-backup.sh --backup        # respaldo ahora (--hot si AppFlowy está abierto y aceptas una copia «en caliente»)
+appflowy-data-backup.sh --restore       # restaurar (elige cuál; --restore <hash> --yes para uno concreto)
+appflowy-data-backup.sh --status        # repo, visibilidad, daemon, último respaldo
+appflowy-data-backup.sh --install-daemon / --uninstall-daemon
+```
+
+- **Qué guarda:** todo `~/.local/share/io.appflowy.appflowy` (notas, bases de datos, imágenes), con las bases SQLite
+  copiadas de forma consistente. Excluye logs, archivos de bloqueo y `shared_preferences.json` (puede contener tu sesión).
+  Además **vacía los tokens de sesión** (`user_table.token`) en la *copia* de la base de datos —tu original no se toca—,
+  así que tras restaurar hay que iniciar sesión en AppFlowy de nuevo. Los archivos de más de 90 MB se omiten
+  porque GitHub rechaza más de 100 MB.
+- **Daemon:** un servicio de usuario de systemd (`appflowy-data-backup.service`) comprueba cada 30 minutos si pasaron
+  7 días desde el último respaldo; si el equipo estuvo apagado, respalda al volver. Si AppFlowy está abierto espera
+  (hasta 24 h) para copiar con la aplicación cerrada. Los fallos se reintentan con espera creciente.
+- **Restaurar:** antes de pisar nada guarda tu estado actual en `~/.local/share/appflowy-data-backup/pre-restore/`
+  y exige que AppFlowy esté cerrado. Conserva tu sesión local.
+- **Repositorio:** `https://github.com/victorcarrillodev/appflowy-backup.git` (cámbialo en
+  `~/.config/appflowy-data-backup/config` con `REPO_URL=...`). Usa tu sesión de `gh` (`gh auth login`).
+
+> **El repositorio debe ser PRIVADO.** Tus notas se suben tal cual. Antes de cada subida el script comprueba la
+> visibilidad y **se niega a subir si es público** (o si no puede comprobarlo).
+> Hazlo privado con `gh repo edit victorcarrillodev/appflowy-backup --visibility private --accept-visibility-change-consequences`.
+

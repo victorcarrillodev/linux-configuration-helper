@@ -61,6 +61,21 @@ post_comun() {
     item_new gh && add_manual_step "Inicia sesión en GitHub CLI: ${BOLD}gh auth login${RESET}."
     item_new playwright-cli && add_manual_step "Playwright CLI descarga su navegador la primera vez que lo usas; para dejarlo listo ya: ${BOLD}playwright-cli install-browser${RESET} (en Ubuntu añade ${BOLD}--with-deps${RESET} para las librerías del sistema)."
 
+    # 8c) Respaldo de AppFlowy: el repositorio DEBE ser privado y hay que tener sesión de GitHub
+    if item_ok appflowy-backup; then
+        local afb="$HOME/.local/bin/appflowy-data-backup.sh" afb_rc=0
+        "$afb" --check-repo >/dev/null 2>&1 || afb_rc=$?
+        case "$afb_rc" in
+            3) add_manual_step "${BOLD}⚠ URGENTE:${RESET} el repositorio de respaldo de AppFlowy es ${BOLD}PÚBLICO${RESET}: tus notas serían visibles para todos. El daemon NO sube nada mientras sea público. Hazlo privado: ${BOLD}gh repo edit victorcarrillodev/appflowy-backup --visibility private --accept-visibility-change-consequences${RESET}" ;;
+            5) add_manual_step "El repositorio de respaldo de AppFlowy no existe o no tienes acceso: créalo PRIVADO con ${BOLD}gh repo create victorcarrillodev/appflowy-backup --private${RESET}." ;;
+            4) add_manual_step "No pude comprobar si el repositorio de respaldo de AppFlowy es privado (¿sin conexión?). Compruébalo con ${BOLD}appflowy-data-backup.sh --status${RESET}." ;;
+        esac
+        if has_cmd gh && ! gh auth status >/dev/null 2>&1; then
+            add_manual_step "Inicia sesión en GitHub para que el respaldo de AppFlowy pueda subir: ${BOLD}gh auth login${RESET}."
+        fi
+        item_new appflowy-backup && add_manual_step "Respaldo semanal de AppFlowy activado (un daemon lo hace cada 7 días). Para hacer uno ahora o restaurar tu información ejecuta: ${BOLD}appflowy-data-backup.sh${RESET}"
+    fi
+
     # 9) Flutter
     item_new flutter && add_manual_step "Verifica Flutter: ${BOLD}flutter doctor${RESET} (para Android: ${BOLD}flutter doctor --android-licenses${RESET})."
 
