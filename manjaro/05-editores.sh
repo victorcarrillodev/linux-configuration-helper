@@ -13,6 +13,7 @@ set_editor_packages cursor cursor-bin
 register_aur antigravity "Antigravity IDE" antigravity-ide antigravity-ide
 set_editor_packages antigravity antigravity-ide
 
-# --- VS Code (paquete «code» del repositorio de Manjaro/Arch) ---
-register_pkg vscode "Visual Studio Code" repo "code!" code
-set_editor_packages vscode code
+# --- VS Code (AUR: visual-studio-code-bin, el original de Microsoft) ---
+# Se instala con yay (depende del módulo 01) y se verifica con el comando «code».
+register_aur vscode "Visual Studio Code" code visual-studio-code-bin
+set_editor_packages vscode visual-studio-code-bin
