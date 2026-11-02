@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # ubuntu/05-editores.sh — Visual Studio Code y Antigravity (repositorios oficiales).
+# El usuario elige en el PASO 3 del menú entre Antigravity, Cursor y VS Code (uno o varios);
+# aquí se definen los ítems, el motor del instalador filtra los que no se eligieron.
 
-section 05 "EDITORES" "Visual Studio Code y Antigravity"
+section 05 "EDITORES" "Editores elegidos en el menú: Antigravity IDE, Cursor y VS Code"
 
 # --- Visual Studio Code ---
 v_vscode() { has_cmd code && pkg_installed code; }
@@ -27,6 +29,7 @@ i_vscode() {
     fi
 }
 register_item vscode "Visual Studio Code" v_vscode i_vscode utilidades-base
+set_editor_packages vscode code
 
 # --- Antigravity ---
 v_antigravity() { has_cmd antigravity || pkg_installed antigravity; }
@@ -43,3 +46,20 @@ i_antigravity() {
     pkg_install antigravity
 }
 register_item antigravity "Antigravity" v_antigravity i_antigravity utilidades-base
+set_editor_packages antigravity antigravity
+
+# --- Cursor (importable .deb oficial; solo amd64 como el resto de sus paquetes) ---
+v_cursor() { has_cmd cursor || pkg_installed cursor; }
+i_cursor() {
+    if [ "$(dpkg --print-architecture)" != "amd64" ]; then
+        warn "Cursor publica .deb solo para amd64 (este equipo es $(dpkg --print-architecture))."
+        return "$RC_SKIP"
+    fi
+    local dir
+    dir="$(mktemp -d)"; chmod 755 "$dir"
+    trap 'rm -rf "$dir"' EXIT
+    download https://downloader.cursor.sh/deb/x64 "${dir}/cursor.deb"
+    pkg_install "${dir}/cursor.deb"
+}
+register_item cursor "Cursor" v_cursor i_cursor utilidades-base
+set_editor_packages cursor cursor

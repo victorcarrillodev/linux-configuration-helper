@@ -88,6 +88,61 @@ nvm_cmd() {
     return "$rc"
 }
 
+# node_release_lts — nombre de la línea LTS del node del PATH (vacío si es una versión Current)
+node_release_lts() {
+    has_cmd node || return 1
+    node -p 'process.release.lts || ""' 2>/dev/null
+}
+
+# node_lts_major — versión mayor de la LTS ACTUAL de Node (>=24: 26, 24, 22…) consultando nodejs.org.
+# Se guarda en caché del día para no reconsultar en cada verificación. Devuelve 1 si no se pudo saber
+# (sin conexión, sin python3 ni awk): en ese caso las verificaciones task solo exigen "que sea LTS".
+node_lts_major() {
+    local cache_dir f m
+    f="${XDG_CACHE_HOME:-$HOME/.cache}/new-linux-conf/node-lts"
+    [ "$(date +%Y%m%d)" = "$(cat "$f" 2>/dev/null)" ] || f=""
+    if [ -n "$f" ]; then
+        m="$(sed -n 2p "$f" 2>/dev/null)"
+        [ -n "$m" ] && { printf '%s\n' "$m"; return 0; }
+        f=""
+    fi
+    local json
+    json="$(curl -fsSL --max-time 20 https://nodejs.org/dist/index.json 2>/dev/null)" || return 1
+    m="$(python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+for r in d:
+    if r.get("lts"):
+        print(r["version"].split(".")[0][1:]); break
+' <<< "$json" 2>/dev/null)"
+    if [ -z "$m" ]; then
+        # Respaldo sin python3: index.json viene minificado, separado por comas
+        m="$(awk -v RS=',' '/"version":"v[0-9]+\./{cur=$0} /"lts":"/{print cur; exit}' <<< "$json" \
+            | grep -oE '[0-9]+' | head -1)"
+    fi
+    [ -n "$m" ] || return 1
+    cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/new-linux-conf"
+    mkdir -p "$cache_dir" && printf '%s\n%s\n' "$(date +%Y%m%d)" "$m" > "$cache_dir/node-lts"
+    printf '%s\n' "$m"
+}
+
+# uninstall_other_nvm_versions [major] — en nvm solo debe quedar la LTS pedida
+uninstall_other_nvm_versions() {
+    local want="${1:-}" v maj
+    if [ -z "$want" ]; then
+        want="$(node_lts_major 2>/dev/null)"
+        want="${want:-}"
+    fi
+    local -a mine=()
+    mapfile -t mine < <(nvm_cmd ls --no-colors 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sort -u)
+    for v in "${mine[@]}"; do
+        maj="${v#v}"; maj="${maj%%.*}"
+        [ "$maj" = "$want" ] && continue
+        nvm_cmd uninstall "$v" 2>&1 | grep -v '^$' \
+            || warn "No se pudo desinstalar nvm $v (quizá está en uso); se conservará."
+    done
+}
+
 # ---------------------------------------------------------------------------
 # Red
 # ---------------------------------------------------------------------------

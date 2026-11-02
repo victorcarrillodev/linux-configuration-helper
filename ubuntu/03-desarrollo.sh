@@ -1,25 +1,41 @@
 #!/usr/bin/env bash
-# ubuntu/03-desarrollo.sh — NVM + Node 24, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Hermes y Tailscale.
+# ubuntu/03-desarrollo.sh — NVM + Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Hermes y Tailscale.
 
-section 03 "DESARROLLO" "NVM, Node 24, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA y Tailscale"
+section 03 "DESARROLLO" "NVM, Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA y Tailscale"
 
 NVM_VERSION="v0.40.3"
-NODE_MAJOR="24"
 
-# --- NVM + Node ---
+# --- NVM + Node LTS (si hay otras versiones se desinstalan y queda solo la LTS) ---
 v_nvm_node() {
-    [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ] && cmd_works node --version \
-        && [[ "$(node --version 2>/dev/null)" == v${NODE_MAJOR}.* ]] && cmd_works npm --version
+    [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ] || return 1
+    cmd_works node --version && cmd_works npm --version || return 1
+    # El node activo debe ser de una línea LTS
+    [ -n "$(node_release_lts)" ] || return 1
+    # Si se pudo saber cuál es la LTS actual del sitio oficial, debe ser exactamente esa
+    local m; m="$(node_lts_major)" || return 0
+    case "$(node --version 2>/dev/null)" in "v$m"*) return 0 ;; *) return 1 ;; esac
 }
 i_nvm_node() {
     if [ ! -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
         run_remote_script "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" bash
     fi
-    nvm_cmd install "$NODE_MAJOR"
-    nvm_cmd alias default "$NODE_MAJOR"
-    nvm_cmd use "$NODE_MAJOR"
+    # Instala la LTS vigente y la deja usando; si no se pudo saber cuál es,
+    # '--lts' hace que nvm use la LTS que conozca
+    local m=""
+    m="$(node_lts_major 2>/dev/null)" || true
+    if [ -n "${m:-}" ]; then
+        nvm_cmd install "$m"
+        nvm_cmd alias default "$m"
+        nvm_cmd use "$m"
+    else
+        nvm_cmd install --lts
+        nvm_cmd alias default 'lts/*'
+        nvm_cmd use 'lts/*'
+    fi
+    # Desinstala cualquier otra versión de nvm (Current, LTS antiguas…)
+    uninstall_other_nvm_versions "${m:-}"
 }
-register_item nvm-node "NVM + Node.js ${NODE_MAJOR}" v_nvm_node i_nvm_node
+register_item nvm-node "NVM + Node.js LTS" v_nvm_node i_nvm_node
 
 # --- Paquetes globales de npm (necesitan Node; register_npm está en lib/core.sh) ---
 register_npm pnpm "pnpm" pnpm pnpm nvm-node

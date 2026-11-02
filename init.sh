@@ -20,6 +20,7 @@ source "${SCRIPT_DIR}/lib/menu.sh"
 
 ONLY=()
 SKIP=()
+PURGE_IDS=()
 LIST_ONLY=0
 DISTRO_FROM_FLAG=0
 
@@ -30,6 +31,7 @@ Uso: ./init.sh [OPCIONES]
 Sin opciones se muestra un menú que pregunta:
   1) el sistema:  Ubuntu (linux conf)  o  Manjaro (manjaro conf)
   2) el destino:  Escritorio  o  USB (portable, con optimizaciones)
+  3) los editores de código: Antigravity IDE, Cursor y/o VS Code (al menos uno)
 
 Opciones:
   --sistema ubuntu|manjaro     Elige el sistema sin preguntar
@@ -40,7 +42,8 @@ Opciones:
   --listar                     Muestra los módulos e ítems del sistema elegido
   --simular                    No instala nada: muestra lo que haría
   --sin-pausa                  No espera 2 s entre instalaciones
-  --yes, -y                    Acepta las respuestas por defecto (nunca borra el instalador)
+  --yes, -y                    Acepta las respuestas por defecto (editores: los tres;
+                               nunca borra el instalador ni editores ya instalados)
   --ayuda, -h                  Muestra esta ayuda
 
 Ejemplos:
@@ -111,13 +114,66 @@ build_active() {
         sec="${ITEM_SECTION[$id]}"
         if [ "${#ONLY[@]}" -gt 0 ] && ! in_list "$id" "${ONLY[@]}" && ! in_list "$sec" "${ONLY[@]}"; then continue; fi
         if [ "${#SKIP[@]}" -gt 0 ] && { in_list "$id" "${SKIP[@]}" || in_list "$sec" "${SKIP[@]}"; }; then continue; fi
+        # Editores: solo los elegidos en el PASO 3 quedan en el plan
+        if in_list "$id" "${EDITOR_ITEMS[@]}" && ! in_list "$id" ${EDITORS_SELECTED:-}; then continue; fi
         ACTIVE_IDS+=("$id")
     done
+}
+
+# ¿El plan incluye módulos de EDITORES? (--solo/--omitir pueden excluirlos; si no, no se pregunta)
+editors_needed_for_plan() {
+    if [ "${#ONLY[@]}" -gt 0 ]; then
+        in_list "05" "${ONLY[@]}" || in_list antigravity "${ONLY[@]}" \
+            || in_list cursor "${ONLY[@]}" || in_list vscode "${ONLY[@]}" || return 1
+    fi
+    if [ "${#SKIP[@]}" -gt 0 ]; then
+        if in_list "05" "${SKIP[@]}"; then return 1; fi
+        if in_list antigravity "${SKIP[@]}" && in_list cursor "${SKIP[@]}" && in_list vscode "${SKIP[@]}"; then return 1; fi
+    fi
+    return 0
+}
+
+# Detecta editores instalados que NO se eligieron y pregunta: conservarlos o desinstalarlos.
+# Si se desinstalan, registra ítems \"purga-<id>\" que entran al plan antes de la limpieza.
+resolve_unselected_editors() {
+    local e
+    for e in "${EDITOR_ITEMS[@]}"; do
+        [ -n "${ITEM_LABEL[$e]:-}" ] || continue          # esta distro no registra ese editor
+        if in_list "$e" ${EDITORS_SELECTED:-}; then continue; fi
+        if in_list "$e" "${SKIP[@]}"; then continue; fi   # el usuario pidió omitirlo: no se toca
+        editor_installed "$e" || continue                 # no está instalado: nada que preguntar
+        if [ "$DRY_RUN" = 1 ]; then
+            info "[simulación] «${ITEM_LABEL[$e]}» está instalado y no lo elegiste: aquí se preguntaría si conservarlo."
+            continue
+        fi
+        echo
+        warn "«${ITEM_LABEL[$e]}» está instalado, pero no lo elegiste."
+        if ask_yes_no "¿Conservarlo además de los elegidos?" S; then
+            success "Se conserva también ${ITEM_LABEL[$e]}."
+        else
+            register_purge_item "$e" "${ITEM_SECTION[${ACTIVE_IDS[-1]}]:-}"
+            PURGE_IDS+=("purga-$e")
+            info "Se desinstalará ${ITEM_LABEL[$e]} junto con las demás tareas."
+        fi
+    done
+    insert_purges_into_plan
+}
+
+# Coloca los ítems de desinstalación antes de la sección de LIMPIEZA (si hay)
+insert_purges_into_plan() {
+    [ "${#PURGE_IDS[@]}" -gt 0 ] || return 0
+    local i idx="${#ACTIVE_IDS[@]}" secname
+    for i in "${!ACTIVE_IDS[@]}"; do
+        secname="${SECTION_NAME[${ITEM_SECTION[${ACTIVE_IDS[$i]}]}]:-}"
+        if [[ "$secname" == *LIMPIEZA* ]]; then idx="$i"; break; fi
+    done
+    ACTIVE_IDS=( "${ACTIVE_IDS[@]:0:$idx}" "${PURGE_IDS[@]}" "${ACTIVE_IDS[@]:$idx}" )
 }
 
 list_catalog() {
     local sec id
     printf '%s\n' "${BOLD}Sistema: $(distro_label "$DISTRO_ID") · destino: ${INSTALL_TARGET}${RESET}"
+    [ -n "$EDITORS_SELECTED" ] && printf '%s\n' "${BOLD}Editores: ${RESET}$(editors_pretty_list $EDITORS_SELECTED)"
     echo
     for sec in "${SECTION_IDS[@]}"; do
         printf '%s\n' "${BOLD}${WHITE}${sec} · ${SECTION_NAME[$sec]}${RESET} ${DIM}— ${SECTION_DESC[$sec]}${RESET}"
@@ -171,6 +227,7 @@ main() {
         DISTRO_ID=""
     done
     choose_target
+    if editors_needed_for_plan; then choose_editors; else EDITORS_SELECTED=""; fi
 
     load_catalog
     build_active
@@ -178,6 +235,9 @@ main() {
         warn "Con las opciones indicadas no hay nada que ejecutar. Usa --listar para ver los módulos."
         exit 0
     fi
+
+    # Editores instalados que no se eligieron: preguntar si se conservan o se desinstalan
+    if editors_needed_for_plan; then resolve_unselected_editors; fi
 
     init_log
     trap stop_sudo EXIT

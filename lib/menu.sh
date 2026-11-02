@@ -6,6 +6,7 @@ MENU_LOADED=1
 
 DISTRO_ID="${DISTRO_ID:-}"          # ubuntu | manjaro
 INSTALL_TARGET="${INSTALL_TARGET:-}" # escritorio | usb
+EDITORS_SELECTED=""                  # ids elegidos: antigravity cursor vscode (nunca vacío)
 
 # ---------------------------------------------------------------------------
 # Entrada
@@ -135,6 +136,67 @@ choose_target() {
     ask_choice "  Elige [1-2]:" "$def" 2
     case "$CHOICE" in 1) INSTALL_TARGET=escritorio ;; 2) INSTALL_TARGET=usb ;; esac
     success "Destino: ${INSTALL_TARGET}"
+    echo
+}
+
+# parse_editor_choice <texto> — imprime los ids elegidos (o devuelve 1 si no hay ninguno válido)
+# Acepta números sueltos, unidos o con comas: "1 3", "1,3", "13", "todos"…
+parse_editor_choice() {
+    local ans="${1,,}" out c d
+    case "$ans" in
+        *todos*|*todas*) printf '%s' "antigravity cursor vscode"; return 0 ;;
+    esac
+    local -a pick=()
+    for ((c = 0; c < ${#ans}; c++)); do
+        d="${ans:c:1}"
+        case "$d" in
+            ' '|',') continue ;;
+            1|2|3) case ":${pick[*]:-}:" in *":$d:"*) ;; *) pick+=("$d") ;; esac ;;
+            *) return 1 ;;
+        esac
+    done
+    [ "${#pick[@]}" -gt 0 ] || return 1
+    for d in "${pick[@]}"; do
+        case "$d" in 1) out+='antigravity ' ;; 2) out+='cursor ' ;; 3) out+='vscode ' ;; esac
+    done
+    printf '%s' "${out% }"
+}
+
+# Paso 3 del menú: qué editores de código instalar (uno o varios; nunca 0)
+choose_editors() {
+    local ans
+    if [ -n "$EDITORS_SELECTED" ]; then return 0; fi   # ya viene elegido
+    if [ "$ASSUME_YES" = 1 ]; then
+        EDITORS_SELECTED="antigravity cursor vscode"
+        success "Editores (por --yes): $(editors_pretty_list antigravity cursor vscode)"
+        echo
+        return 0
+    fi
+
+    printf '%s\n' "${BOLD}${WHITE}  PASO 3 · ¿Qué editores de código quieres instalar?${RESET}"
+    echo
+    printf '%s\n' "     ${CYAN}1)${RESET} Antigravity IDE  ${DIM}— IDE con IA de Google${RESET}"
+    printf '%s\n' "     ${CYAN}2)${RESET} Cursor           ${DIM}— editor con IA (basado en VS Code)${RESET}"
+    printf '%s\n' "     ${CYAN}3)${RESET} VS Code          ${DIM}— Visual Studio Code de Microsoft${RESET}"
+    echo
+    printf '%s\n' "     ${DIM}Puedes elegir varios: p. ej. 1 3 · 1,3 · 13 · o «todos». Debe quedar al menos uno.${RESET}"
+    while true; do
+        printf '%s' "  ${BOLD}Elige [1-3]: ${RESET}"
+        if ! read -r ans; then
+            echo
+            error "No hay entrada interactiva. Usa --yes para instalar los tres editores."
+            exit 1
+        fi
+        if [ -z "${ans//[ ,]/}" ]; then
+            warn "Debes elegir al menos un editor."
+            continue
+        fi
+        if EDITORS_SELECTED="$(parse_editor_choice "$ans")" && [ -n "$EDITORS_SELECTED" ]; then
+            break
+        fi
+        warn "Opción no válida. Escribe números del 1 al 3 (p. ej. 1 3), o «todos»."
+    done
+    success "Editores elegidos: $(editors_pretty_list $EDITORS_SELECTED)"
     echo
 }
 

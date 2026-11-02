@@ -1,9 +1,26 @@
 #!/usr/bin/env bash
-# manjaro/03-desarrollo.sh — Node.js, pnpm, Bun, Rust, Flutter, rutas globales de JS y Tailscale.
+#!/usr/bin/env bash
+# manjaro/03-desarrollo.sh — Node.js LTS, pnpm, Bun, Rust, Flutter, rutas globales de JS y Tailscale.
 
-section 03 "DESARROLLO" "Node.js, pnpm, Bun, Rust, Flutter, GitHub CLI, Playwright, herdr y Tailscale"
+section 03 "DESARROLLO" "Node.js LTS, pnpm, Bun, Rust, Flutter, GitHub CLI, Playwright, herdr y Tailscale"
 
-register_pkg nodejs "Node.js + npm" repo "node!" nodejs npm
+# --- Node.js LTS (repo de Manjaro) ---
+# El repo trae «nodejs» (versión Current) y «nodejs-lts» (LTS). Si hay un nodejs no-LTS, se
+# desinstala y queda la LTS. Se verifica contra /usr/bin/node (ignora cualquier nvm del usuario).
+v_node() {
+    pkg_installed nodejs-lts || return 1
+    [ -x /usr/bin/node ] || return 1
+    cmd_works /usr/bin/node --version || return 1
+    [ -n "$(/usr/bin/node -p 'process.release.lts || ""' 2>/dev/null)" ] || return 1
+}
+i_node() {
+    if pkg_installed nodejs; then   # la versión Current (no LTS) está instalada: fuera
+        info "Retirando «nodejs» (versión que no es LTS)…"
+        sudo pacman -Rns --noconfirm nodejs || sudo pacman -Rdd --noconfirm nodejs
+    fi
+    pkg_install nodejs-lts
+}
+register_item nodejs "Node.js LTS + npm" v_node i_node
 register_pkg pnpm   "pnpm"          repo "pnpm!" pnpm
 register_pkg bun    "Bun"           repo "bun!"  bun
 

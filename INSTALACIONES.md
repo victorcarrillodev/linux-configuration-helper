@@ -23,7 +23,8 @@ El programa es el mismo; cambia **cómo** se instala en cada sistema.
 | Eliminar Firefox | deb y snap, con su perfil | `pacman -Rns firefox` |
 | Brave Nightly | repositorio apt oficial de Brave | AUR `brave-nightly-bin` |
 | Google Chrome | **canal Dev** (`.deb` oficial) | **canal estable** (AUR `google-chrome`) |
-| Node.js | NVM + Node 24 | `nodejs` + `npm` (pacman) |
+| Node.js | NVM + **Node LTS** (desinstala cualquier otra versión) | **`nodejs-lts`** (pacman); si hay «nodejs» no-LTS lo retira |
+| Editores de código | Se eligen en el PASO 3 del menú: Antigravity IDE (repo apt de Google), Cursor (.deb oficial) y/o VS Code (repos. apt de Microsoft); los no elegidos pueden conservarse o desinstalarse | Antigravity IDE (AUR), Cursor (AUR) y/o VS Code (pacman `code`) |
 | pnpm | `npm -g` | pacman |
 | Bun | instalador oficial | pacman |
 | Flutter | snap + dependencias de escritorio Linux | AUR `flutter-bin` |
@@ -50,7 +51,7 @@ El programa es el mismo; cambia **cómo** se instala en cada sistema.
 | Gemini CLI | `npm -g @google/gemini-cli` |
 | Codex CLI | `npm -g @openai/codex` |
 | Hermes Agent (Nous Research) | instalador oficial (sin asistente interactivo; queda como paso manual) |
-| Visual Studio Code | repositorio apt de Microsoft |
+| Cursor | .deb oficial (downloader.cursor.sh, solo amd64) |
 | Variety + wallpapers | Variety y el repositorio de fondos clonado en `~/wallpapers` (~260 MB, por eso tarda) |
 | Terminal | Zsh, Oh My Zsh, Powerlevel10k, autosuggestions y syntax-highlighting, fuentes CascadiaCode NF y MesloLGS NF, Wave Terminal, `~/.zshrc` con banner, Zsh como shell por defecto |
 | LibreOffice | PPA oficial, en español |
@@ -67,6 +68,7 @@ El programa es el mismo; cambia **cómo** se instala en cada sistema.
 | yay | ayudante de AUR (se instala antes que cualquier paquete de AUR) |
 | Rust | `rustup` con toolchain `stable` |
 | Cursor IDE | AUR `cursor-bin` |
+| VS Code | pacman `code` |
 | Claude Desktop | AUR `claude-desktop` |
 | WhatsDesk (WhatsApp) | AUR `whatsdesk-bin` |
 | Rutas globales de npm / pnpm / bun | `npm` con prefijo `~/.npm-global` para instalar paquetes globales **sin sudo**, más las rutas en `~/.zshrc` y `~/.bashrc` |

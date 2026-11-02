@@ -30,6 +30,64 @@ declare -A ITEM_STATUS ITEM_NOTE ITEM_INDEX ITEM_PRE
 declare -A SECTION_NAME SECTION_DESC
 declare -A PKG_SRC PKG_CMD PKG_LIST NPM_PKG NPM_CMD
 
+# --- Editores -----------------------------------------------------------------
+# Los tres id de editores (cada catálogo debe registrarlos para su distro).
+EDITOR_ITEMS=(antigravity cursor vscode)
+declare -A EDITOR_PKGS          # id → paquetes con los que se desinstala (set_editor_packages)
+
+# set_editor_packages <id-editor> <paquete…> — paquetes para el ítem de desinstalación
+set_editor_packages() {
+    local id="$1"
+    shift
+    EDITOR_PKGS[$id]="$*"
+}
+
+# editor_pretty <id-editor> [id…] — nombre para mostrar; si se pasa una lista, unida con « · »
+editor_pretty() {
+    case "$1" in
+        antigravity) printf 'Antigravity IDE' ;;
+        cursor)      printf 'Cursor' ;;
+        vscode)      printf 'VS Code' ;;
+        *)           printf '%s' "$1" ;;
+    esac
+}
+
+editors_pretty_list() {
+    local e out=""
+    for e in "$@"; do out+="${out:+, }$(editor_pretty "$e")"; done
+    printf '%s' "$out"
+}
+
+# Comando con el que se detecta un editor ya instalado (independiente del gestor)
+editor_command() {
+    case "$1" in
+        antigravity) echo antigravity ;;
+        cursor)      echo cursor ;;
+        vscode)      echo code ;;
+        *)           echo "$1" ;;
+    esac
+}
+
+editor_installed() { has_cmd "$(editor_command "$1")"; }
+
+# --- Purga de editores (se ejecuta cuando el usuario no eligió un editor instalado) ---
+# register_purge_item <id-editor> [sección] — la sección del último ítem evita repintar títulos
+register_purge_item() {
+    local id="$1" pid="purga-$1"
+    register_item "$pid" "Desinstalar ${ITEM_LABEL[$id]}" v_purge_editor i_purge_editor
+    ITEM_SECTION[$pid]="${2:-${ITEM_SECTION[$id]}}"
+}
+
+# verify del ítem de purga: "instalado" cuando AÚN está, y verificado cuando YA NO está
+v_purge_editor() { ! editor_installed "${1#purga-}"; }
+
+i_purge_editor() {
+    local id="${1#purga-}"
+    [ -n "${EDITOR_PKGS[$id]:-}" ] || { error "No se conocen los paquetes de ${ITEM_LABEL[$id]:-$id}."; return 1; }
+    # shellcheck disable=SC2086
+    pkg_remove ${EDITOR_PKGS[$id]}
+}
+
 # ---------------------------------------------------------------------------
 # Registro y log
 # ---------------------------------------------------------------------------
@@ -141,6 +199,7 @@ pkg_refresh()    { return 0; }
 pkg_repair()     { return 0; }
 pkg_fix_keys()   { return 0; }
 pkg_clean()      { return 0; }
+pkg_remove()     { error "No hay gancho de desinstalación de paquetes para esta distro."; return 1; }
 
 # ---------------------------------------------------------------------------
 # Sudo
@@ -434,7 +493,9 @@ print_summary() {
             fi
             case "$st" in
                 ok)         mark="${GREEN}✔${RESET}"
-                            if [ "${ITEM_VERIFY[$id]}" = "-" ]; then text="${GREEN}ejecutado${RESET}"; else text="${GREEN}instalado ahora${RESET}"; fi ;;
+                            if [ "${ITEM_VERIFY[$id]}" = "v_purge_editor" ]; then
+                                text="${GREEN}desinstalado ahora${RESET}"
+                            elif [ "${ITEM_VERIFY[$id]}" = "-" ]; then text="${GREEN}ejecutado${RESET}"; else text="${GREEN}instalado ahora${RESET}"; fi ;;
                 present)    mark="${GREEN}✔${RESET}"; text="${DIM}ya estaba instalado${RESET}" ;;
                 skipped)    mark="${YELLOW}○${RESET}"; text="${YELLOW}omitido — ${ITEM_NOTE[$id]:-}${RESET}" ;;
                 simulated)  mark="${CYAN}~${RESET}"; text="${CYAN}simulación${RESET}" ;;

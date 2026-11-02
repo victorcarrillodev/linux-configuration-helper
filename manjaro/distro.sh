@@ -9,6 +9,7 @@ YAY_OPTS=(--needed --noconfirm --answerdiff None --answerclean None --removemake
 
 pkg_installed() { pacman -Q "$1" >/dev/null 2>&1; }
 pkg_install()   { sudo pacman -S --needed --noconfirm "$@"; }
+pkg_remove()    { sudo pacman -Rns --noconfirm "$@"; }
 
 # Paquetes de AUR (requiere yay, que instala el módulo 01)
 aur_install() {

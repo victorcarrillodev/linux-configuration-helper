@@ -12,6 +12,7 @@ apt_get() { sudo env DEBIAN_FRONTEND=noninteractive apt-get "${APT_OPTS[@]}" "$@
 
 pkg_installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'install ok installed'; }
 pkg_install()   { apt_get install "$@"; }
+pkg_remove()    { apt_get purge "$@"; }
 pkg_refresh()   { sudo apt-get -o DPkg::Lock::Timeout=300 -o Acquire::Retries=3 update; }
 pkg_upgrade()   { pkg_refresh && apt_get upgrade; }
 pkg_clean()     { apt_get autoremove; sudo apt-get autoclean -y; sudo apt-get clean; }

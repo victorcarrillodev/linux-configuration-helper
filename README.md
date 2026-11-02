@@ -59,7 +59,12 @@ manjaro/             «manjaro conf» (pacman + AUR/yay)
 
 Está detallado en **[INSTALACIONES.md](INSTALACIONES.md)**, separado en tres secciones:
 lo que se instala **solo en Ubuntu**, **solo en Manjaro** y **en las dos distros**
-(GitHub CLI, Playwright CLI, herdr, AppFlowy, Docker, Brave, Node, pnpm, Bun, Flutter, Claude Code, OpenCode, Tailscale, Antigravity…).
+(GitHub CLI, Playwright CLI, herdr, AppFlowy, Docker, Brave, Node LTS, pnpm, Bun, Flutter, Claude Code, OpenCode, Tailscale…).
+
+**Editores de código** (ambos sistemas): en el PASO 3 del menú eliges uno o varios entre
+Antigravity IDE, Cursor y VS Code. Si un editor que no elegiste ya está instalado, el instalador
+pregunta si lo conservas o lo desinstala. Node.js se fuerza en su versión **LTS** vigente en
+las dos distros (si hay otra versión, se borra y se reemplaza por la LTS).
 
 **Modo USB** (ambos sistemas): sysctl de escritura, logs en RAM, planificador BFQ, zram, `noatime`,
 `/tmp` en RAM y `profile-sync-daemon`. **Modo Escritorio** revierte lo anterior si se había aplicado.
