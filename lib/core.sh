@@ -261,6 +261,7 @@ run_item() {
         warn "Se omite: depende de «${missing}», que no está disponible."
         ITEM_STATUS[$id]=skipped; ITEM_NOTE[$id]="depende de ${missing}"
         log "  omitido (dependencia: ${missing})"
+        item_end
         pause_after_item
         return 0
     fi
@@ -270,6 +271,7 @@ run_item() {
         success "Ya está instalado/configurado y verificado — se omite."
         ITEM_STATUS[$id]=present
         log "  ya instalado"
+        item_end
         pause_after_item
         return 0
     fi
@@ -278,6 +280,7 @@ run_item() {
     if [ "$DRY_RUN" = 1 ]; then
         info "[simulación] se ejecutaría: ${label}"
         ITEM_STATUS[$id]=simulated
+        item_end
         return 0
     fi
 
@@ -334,6 +337,7 @@ run_item() {
         failed)  printf '%s\n' "${RED}${BOLD}  ✘ FALLÓ tras ${MAX_RETRIES} intentos:${RESET} ${label}" ;;
     esac
     log "  resultado: ${ITEM_STATUS[$id]}"
+    item_end
     pause_after_item
 }
 
