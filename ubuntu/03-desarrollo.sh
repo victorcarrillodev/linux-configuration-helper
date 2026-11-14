@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# ubuntu/03-desarrollo.sh — NVM + Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Claude Desktop,
+# ubuntu/03-desarrollo.sh — NVM + Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Claude Desktop, Serena,
 #                           Hermes, herdr y Tailscale.
 
-section 03 "DESARROLLO" "NVM, Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Claude Desktop, herdr (CLI/App) y Tailscale"
+section 03 "DESARROLLO" "NVM, Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Claude Desktop, ahorro de tokens (Serena), herdr (CLI/App) y Tailscale"
 
 NVM_VERSION="v0.40.3"
 
@@ -98,6 +98,13 @@ describe_claude
 # Status line de Claude Code (barras de contexto y límites de 5 h / semanal), igual en ambas distros
 register_item claude-statusline "Status line de Claude Code (contexto y límites)" v_claude_statusline i_claude_statusline
 describe_claude_statusline
+
+# Ahorro de tokens: uv (instalador oficial) → Serena (índice de código, MCP) + ajustes globales de Claude Code
+register_item uv            "uv (gestor de Python, lo usa Serena)"            v_uv            i_uv            utilidades-base
+register_item claude-ahorro "Claude Code: ajustes para ahorrar tokens"        v_claude_ahorro i_claude_ahorro claude-code
+register_item serena        "Serena: índice de código para Claude Code (MCP)" v_serena        i_serena        uv claude-code
+describe_claude_tokens
+register_post post_claude_tokens
 
 # Hermes Agent (Nous Research). --skip-setup evita el asistente interactivo: queda como paso manual.
 v_hermes() { has_cmd hermes; }

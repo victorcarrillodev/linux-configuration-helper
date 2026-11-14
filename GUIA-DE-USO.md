@@ -278,7 +278,83 @@ Antes de borrar, el script comprueba que:
 Si un ítem falla de forma reproducible, el registro de la ejecución contiene la salida completa del
 instalador y la línea de error que se muestra en el resumen.
 
-## 13. Referencia rápida
+## 13. Claude Code: ahorrar tokens con Serena
+
+Tres ítems de la lista del PASO 3 (en Manjaro, sección `06 · IA`; en Ubuntu, `03 · DESARROLLO`)
+dejan Claude Code configurado para gastar menos tokens **en todos tus proyectos**, sin pasos manuales:
+
+| Ítem | Qué deja configurado |
+|---|---|
+| `uv` | Gestor de Python de Astral. Serena se instala y actualiza con él. |
+| `serena` | [Serena](https://github.com/oraios/serena) instalado con `uv tool install -p 3.13 serena-agent` y registrado en Claude Code **para todos los proyectos** (`claude mcp add --scope user`, contexto `claude-code`, `--project-from-cwd` y sin abrir el panel web). Añade a `~/.claude/settings.json` los hooks que recomienda Serena (`remind`, `activate`, `cleanup`) y `MCP_TIMEOUT=60000`. |
+| `claude-ahorro` | En `~/.claude/settings.json`, reglas `permissions.deny` para que Claude no lea `node_modules`, `dist`, `.next`, `.venv`, `coverage`, `__pycache__`, minificados, `*.map` ni lockfiles. Añade un bloque con pautas de ahorro a `~/.claude/CLAUDE.md` e instala el comando `claude-proyecto`. |
+
+```bash
+./init.sh --solo uv --solo claude-ahorro --solo serena    # solo esto
+```
+
+**Cómo se garantiza que siga funcionando.** Cada ítem tiene una verificación real: `serena --help`
+responde, `serena-hooks` existe, el MCP `serena` está en `~/.claude.json` apuntando a un ejecutable
+válido, y los hooks, las reglas y el bloque de `CLAUDE.md` están presentes. Si algo se rompe (por
+ejemplo, si actualizas Claude Code y pierdes el registro, o borras un hook), vuelve a ejecutar
+`./init.sh`: la auditoría lo marca como pendiente y lo repara. Tus otros ajustes nunca se borran, y
+antes de cada cambio se guarda una copia `~/.claude/settings.json.bak-<fecha>`.
+
+### Uso diario
+
+1. **Una vez por proyecto**, dentro de su carpeta:
+
+   ```bash
+   cd ~/proyectos/mi-app
+   claude-proyecto              # crea CLAUDE.md (plantilla) y el índice de Serena
+   ```
+
+   La primera vez Serena descarga el servidor de lenguaje del proyecto (Python, TypeScript, etc.).
+   Algunos lenguajes necesitan el suyo instalado aparte: Go (`gopls`), Rust (`rust-analyzer`).
+   Después, el índice **se actualiza solo** cuando cambian los archivos.
+   `claude-proyecto --reindexar` lo reconstruye desde cero.
+
+2. **Completa `CLAUDE.md`**: abre `claude` en la carpeta y ejecuta `/init`, o rellena la plantilla.
+   Debe ser corto (50–150 líneas): qué es el proyecto, mapa de carpetas, comandos y convenciones.
+   En proyectos grandes, añade `CLAUDE.md` pequeños en las subcarpetas principales: Claude los
+   carga solo cuando trabaja en esa zona.
+
+3. **Trabaja normal**: abre `claude` **dentro de la carpeta del proyecto** (no en `~`: Serena usa
+   la carpeta actual como proyecto). Con `/mcp` compruebas que `serena` está conectado.
+   Claude usará `find_symbol`, `get_symbols_overview` y `find_referencing_symbols` para leer solo la
+   función o clase que necesita; el hook `remind` se lo recuerda si se pone a leer archivos enteros.
+
+### Hábitos que más ahorran
+
+| Hábito | Por qué |
+|---|---|
+| `/clear` al cambiar de tarea | Arrastrar el historial de otra tarea es el mayor gasto. |
+| `/compact` en tareas largas | Resume la conversación y libera contexto. |
+| `/context` y `/cost` | Ver qué ocupa el contexto y cuánto llevas gastado; mide antes de optimizar. |
+| Pedidos concretos | «Arregla X en `archivo:línea`» gasta mucho menos que «revisa el proyecto». |
+| Subagentes para explorar | «Usa un subagente para encontrar dónde se valida el pago»: la exploración no llena tu conversación. |
+| Salidas cortas | Tests con `-q`/`--silent`, `\| tail -n 50`, `git diff --stat`. |
+| Modelo adecuado | Tareas simples con un modelo más ligero (`/model`). |
+| Pocos MCP activos | Desactiva los MCP que no uses en ese proyecto (`/mcp`). |
+
+### Ajustes y solución de problemas
+
+| Situación | Qué hacer |
+|---|---|
+| `serena` no aparece en `/mcp` | `claude mcp get serena`; si falta, `./init.sh --solo serena`. |
+| Serena tarda en conectar la primera vez | Normal: descarga el servidor de lenguaje. `MCP_TIMEOUT=60000` ya da margen. |
+| Quiero ver el panel de Serena | `http://localhost:24282/dashboard/index.html` mientras Claude está abierto. |
+| Claude necesita leer algo bloqueado (p. ej. un lockfile) | Quita esa regla de `permissions.deny` en `~/.claude/settings.json` (las reglas `deny` tienen prioridad sobre `allow`). Si vuelves a ejecutar `./init.sh` con `claude-ahorro`, la regla se restaura. |
+| Bloquear más carpetas en un proyecto | Añade reglas `deny` en `.claude/settings.json` del proyecto, p. ej. `"Read(./build/**)"`. `build/` y `target/` no se bloquean de forma global porque en algunos proyectos son código. |
+| Actualizar Serena | `uv tool upgrade serena-agent` (o `./init.sh --solo serena`). |
+| Quitar Serena | `claude mcp remove --scope user serena`, `uv tool uninstall serena-agent` y borrar los hooks `serena-hooks` de `~/.claude/settings.json`. |
+
+> **No se instalan «token optimizers» de terceros.** Prometen ahorros del 60–99%, pero miden contra
+> «leer archivos completos», no contra lo que Claude Code ya hace (grep y lecturas parciales).
+> Algunos instalan hooks globales en cada herramienta y pueden romper el prompt caching. Si quieres
+> probar uno, mide con `/cost` las mismas tareas con y sin él.
+
+## 14. Referencia rápida
 
 ```bash
 ./init.sh --ayuda                                  # todas las opciones
@@ -289,4 +365,5 @@ instalador y la línea de error que se muestra en el resumen.
 ./init.sh --omitir wave                            # todo menos un ítem
 ./init.sh --solo-usb                               # solo optimizaciones USB
 tail -f ~/.local/state/new-linux-conf/*.log        # seguir el registro
+claude-proyecto                                    # preparar un proyecto para Claude + Serena
 ```

@@ -17,7 +17,7 @@ pendiente, verifica que todo funcione de verdad y te dice qué te queda por hace
 | Documento | Para qué sirve |
 |---|---|
 | **[INICIO-RAPIDO.md](INICIO-RAPIDO.md)** | Primera instalación en 5 minutos, paso a paso. |
-| **[GUIA-DE-USO.md](GUIA-DE-USO.md)** | Menús, todas las opciones, modos Escritorio/USB, fallos y registro. |
+| **[GUIA-DE-USO.md](GUIA-DE-USO.md)** | Menús, todas las opciones, modos Escritorio/USB, fallos, registro y [Claude Code + Serena para ahorrar tokens](GUIA-DE-USO.md#13-claude-code-ahorrar-tokens-con-serena). |
 | **[INSTALACIONES.md](INSTALACIONES.md)** | Catálogo completo: qué se instala en cada distro, cómo, cómo se verifica y de qué depende. |
 
 ---
@@ -75,7 +75,8 @@ y la lista de **pasos manuales** que te corresponden.
 
 ```
 init.sh                     Punto de entrada único: opciones, menús y flujo
-claude/                     Status line de Claude Code (statusline.py) y su activador en settings.json
+claude/                     Status line (statusline.py), ajustes de ahorro de tokens + Serena (configurar-claude.py)
+                            y el comando claude-proyecto (claude-proyecto.sh)
 lib/                        Motor
   ui.sh                     Banner, títulos, mensajes, pausa entre instalaciones
   menu.sh                   Preguntas: sistema, destino, editores, confirmaciones

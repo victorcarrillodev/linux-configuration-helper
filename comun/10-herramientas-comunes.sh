@@ -115,13 +115,15 @@ v_claude_statusline() {
     has_cmd python3 && [ -x "$CLAUDE_SL_DST" ] && cmp -s "$CLAUDE_SL_SRC" "$CLAUDE_SL_DST" \
         && python3 "${SCRIPT_DIR}/claude/instalar-statusline.py" --comprobar
 }
+ensure_python3() {
+    has_cmd python3 && return 0
+    case "$DISTRO_ID" in
+        ubuntu)  pkg_install python3 ;;
+        manjaro) pkg_install python ;;
+    esac
+}
 i_claude_statusline() {
-    if ! has_cmd python3; then
-        case "$DISTRO_ID" in
-            ubuntu)  pkg_install python3 ;;
-            manjaro) pkg_install python ;;
-        esac
-    fi
+    ensure_python3
     mkdir -p "${HOME}/.claude"
     install -m 755 "$CLAUDE_SL_SRC" "$CLAUDE_SL_DST"
     python3 "${SCRIPT_DIR}/claude/instalar-statusline.py" --instalar
@@ -131,4 +133,72 @@ i_claude_statusline() {
 }
 describe_claude_statusline() {
     describe claude-statusline "Barra de estado para Claude Code en la terminal: usuario@equipo, carpeta y estado de git; modelo y contexto usado con barra; y los límites de 5 horas y semanal con barras de color y hora de reinicio. Se activa en ~/.claude/settings.json (con copia de seguridad)."
+}
+
+# --- Ahorro de tokens en Claude Code: uv, Serena y ajustes globales ---
+# Todo se escribe con claude/configurar-claude.py, que fusiona sin borrar tus ajustes y hace copia
+# de seguridad de ~/.claude/settings.json antes de cambiarlo.
+CLAUDE_CFG_PY="${SCRIPT_DIR}/claude/configurar-claude.py"
+CLAUDE_PROYECTO_SRC="${SCRIPT_DIR}/claude/claude-proyecto.sh"
+CLAUDE_PROYECTO_DST="${HOME}/.local/bin/claude-proyecto"
+
+# uv (gestor de Python de Astral): Serena se instala y actualiza con él.
+# Ubuntu: instalador oficial → ~/.local/bin (sin tocar los rc: el PATH lo gestiona este instalador).
+# Manjaro: paquete «uv» del repo oficial (se registra con register_pkg).
+v_uv() { cmd_works uv --version; }
+i_uv() { UV_NO_MODIFY_PATH=1 run_remote_script https://astral.sh/uv/install.sh sh; }
+
+# Serena: MCP que indexa el código con servidores de lenguaje (LSP) para que Claude lea símbolos
+# concretos en vez de archivos completos. Se registra para TODOS los proyectos (--scope user) con
+# --project-from-cwd: al abrir «claude» en una carpeta, Serena trabaja sobre ese proyecto.
+# El panel web no se abre solo (--open-web-dashboard False). Además se añaden los hooks
+# recomendados por Serena (remind/activate/cleanup) y MCP_TIMEOUT=60000.
+SERENA_MCP_ARGS=(start-mcp-server --context claude-code --project-from-cwd --open-web-dashboard False)
+v_serena() {
+    cmd_works serena --help || return 1
+    has_cmd serena-hooks || return 1
+    python3 "$CLAUDE_CFG_PY" --comprobar-serena
+}
+i_serena() {
+    has_cmd uv     || { error "uv no está disponible."; return 1; }
+    has_cmd claude || { error "Claude Code (comando claude) no está disponible."; return 1; }
+    ensure_python3
+    # --force: reinstala limpio si una instalación anterior quedó rota
+    uv tool install --force -p 3.13 serena-agent
+    refresh_env
+    local bin hooks
+    bin="$(command -v serena)"        || { error "No se encontró el comando serena tras instalarlo."; return 1; }
+    hooks="$(command -v serena-hooks)" || { error "No se encontró serena-hooks tras instalarlo."; return 1; }
+    # Registro limpio en Claude Code (ruta absoluta: funciona aunque el PATH del cliente sea otro)
+    claude mcp remove --scope user serena >/dev/null 2>&1 || true
+    claude mcp add --scope user serena -- "$bin" "${SERENA_MCP_ARGS[@]}"
+    python3 "$CLAUDE_CFG_PY" --serena "$hooks"
+}
+
+# Ajustes globales de Claude Code para gastar menos tokens:
+#   · ~/.claude/settings.json → permissions.deny para node_modules, dist, lockfiles, *.min.js…
+#   · ~/.claude/CLAUDE.md     → bloque con pautas de ahorro (usar Serena, subagentes, salidas cortas)
+#   · ~/.local/bin/claude-proyecto → prepara cada proyecto (CLAUDE.md + índice de Serena)
+v_claude_ahorro() {
+    [ -x "$CLAUDE_PROYECTO_DST" ] && cmp -s "$CLAUDE_PROYECTO_SRC" "$CLAUDE_PROYECTO_DST" \
+        && python3 "$CLAUDE_CFG_PY" --comprobar-ahorro
+}
+i_claude_ahorro() {
+    ensure_python3
+    mkdir -p "${HOME}/.local/bin"
+    install -m 755 "$CLAUDE_PROYECTO_SRC" "$CLAUDE_PROYECTO_DST"
+    python3 "$CLAUDE_CFG_PY" --ahorro
+}
+
+describe_claude_tokens() {
+    describe uv            "uv: gestor de paquetes y versiones de Python, muy rápido (Astral). Lo usa Serena para instalarse y actualizarse. Comandos: uv, uvx"
+    describe serena        "Serena: índice de código para Claude Code (MCP con servidores de lenguaje). Claude busca funciones, clases y referencias sin leer archivos completos, y así gasta menos tokens. Queda activo en todos los proyectos con sus hooks. Comando: serena"
+    describe claude-ahorro "Ajustes de Claude Code para ahorrar tokens: bloquea la lectura de node_modules, dist, lockfiles y minificados; añade pautas de ahorro a ~/.claude/CLAUDE.md; e instala el comando claude-proyecto (CLAUDE.md + índice de Serena por proyecto)."
+}
+
+# Paso manual al terminar: cada proyecto se prepara una vez con claude-proyecto
+post_claude_tokens() {
+    if item_new serena || item_new claude-ahorro; then
+        add_manual_step "Claude Code + Serena: en cada proyecto ejecuta ${BOLD}claude-proyecto${RESET} una vez (crea CLAUDE.md e indexa el código) y luego abre ${BOLD}claude${RESET} ahí. Comprueba con ${BOLD}/mcp${RESET} que «serena» aparece conectado. Guía: GUIA-DE-USO.md, sección 13."
+    fi
 }

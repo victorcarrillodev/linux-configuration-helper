@@ -81,6 +81,9 @@ mismo comportamiento en ambas distros.
 | Claude Desktop (app de escritorio) | `claude-desktop` | **oficial** (beta, Ubuntu 22.04+, amd64/arm64): repositorio apt de Anthropic; la clave se acepta solo si su huella es `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE` | AUR `claude-desktop` (reempaquetado del `.deb` oficial: Anthropic no publica para Arch) | paquete `claude-desktop` y comando `claude-desktop` (Ubuntu) / comando | utilidades base / `yay` |
 | Claude Code CLI (terminal) | `claude-code` | `npm -g @anthropic-ai/claude-code` | AUR `claude-code` | comando `claude` | `nvm-node` / `yay` |
 | Status line de Claude Code | `claude-statusline` | copia `claude/statusline.py` a `~/.claude/statusline.py` y añade el bloque `statusLine` a `~/.claude/settings.json` con `claude/instalar-statusline.py` (conserva el resto de ajustes, hace copia `settings.json.bak-<fecha>` y no escribe nada si el JSON está roto); instala `python3` si falta (módulo 03) | igual, con `python` (módulo 06) | script idéntico al del repo, `statusLine.command` apuntándole y prueba con datos de ejemplo | — |
+| uv (gestor de Python) | `uv` | instalador oficial `astral.sh/uv/install.sh` → `~/.local/bin` (sin tocar los rc; módulo 03) | pacman `uv` (módulo 06) | `uv --version` | utilidades base (solo Ubuntu) |
+| Claude Code: ahorro de tokens | `claude-ahorro` | `claude/configurar-claude.py --ahorro`: añade reglas `permissions.deny` (node_modules, dist, lockfiles, minificados…) a `~/.claude/settings.json` (con copia `.bak-<fecha>`), un bloque con marcadores en `~/.claude/CLAUDE.md` e instala `claude/claude-proyecto.sh` como `~/.local/bin/claude-proyecto` | igual | reglas y bloque presentes, `claude-proyecto` idéntico al del repo | `claude-code` |
+| Serena (índice de código, MCP) | `serena` | `uv tool install --force -p 3.13 serena-agent`; `claude mcp add --scope user serena -- <ruta>/serena start-mcp-server --context claude-code --project-from-cwd --open-web-dashboard False`; hooks `serena-hooks remind/activate/cleanup` y `env.MCP_TIMEOUT=60000` en `~/.claude/settings.json` | igual | `serena --help`, `serena-hooks` en el PATH, MCP registrado en `~/.claude.json` con ejecutable válido y hooks presentes | `uv` · `claude-code` |
 | Docker + Compose + Buildx | `docker` | repositorio oficial `docker-ce` + servicio | pacman `docker docker-compose docker-buildx` + servicio | `docker --version`, `docker compose version` y servicio habilitado | utilidades base (solo Ubuntu) |
 | Docker sin sudo | `docker-sin-sudo` | pasos post-instalación oficiales: grupo `docker` (lo crea si falta) + `usermod -aG docker`, `~/.docker` a tu nombre, `docker` y `containerd` al arranque | igual | grupo existe y te incluye, `~/.docker` es tuyo y servicio habilitado | `docker` |
 | Espanso (expansor de texto) | `espanso` | `.deb` oficial de GitHub `espanso-debian-<wayland\|x11>-amd64` según la sesión; `setcap` en Wayland; `espanso service register` + `start` (módulo 08) | AUR `espanso-wayland` o `espanso-x11` según la sesión (se compila) + mismos pasos (módulo 07) | `espanso --version` y servicio de usuario registrado | utilidades base / `yay` |
@@ -210,12 +213,14 @@ entorno-js (Manjaro) ──> playwright-cli
 **Ubuntu**
 
 ```
-utilidades-base ──> bun · hermes · tailscale · gh · herdr · herdr-app · claude-desktop · docker · wave
+utilidades-base ──> bun · hermes · tailscale · gh · herdr · herdr-app · claude-desktop · docker · wave · uv
                    · espanso
 docker ───────────> docker-sin-sudo
                    · neovim · lazygit · yazi
                    · libreoffice · codecs · vscode · antigravity · cursor
 nvm-node ─────────> pnpm · gemini-cli · claude-code · codex · opencode · playwright-cli
+claude-code ──────> claude-ahorro · serena
+uv ───────────────> serena
 zsh-paquetes ─────> oh-my-zsh · fuente-cascadia · fuente-meslo · shell-zsh
 oh-my-zsh ────────> p10k
 p10k ─────────────> zshrc
@@ -230,6 +235,8 @@ yay ─────────> brave · chrome · flutter · whatsdesk · espa
 nodejs ──────> entorno-js
 docker ──────> docker-sin-sudo
 entorno-js ──> playwright-cli
+claude-code ─> claude-ahorro · serena
+uv ──────────> serena
 ```
 
 ---
@@ -263,12 +270,13 @@ entorno-js ──> playwright-cli
 | Neovim | `github.com/neovim/neovim/releases/latest` (`nvim-linux-x86_64` / `arm64`) |
 | lazygit | última release de `jesseduffield/lazygit` (API de GitHub) |
 | Yazi | `github.com/sxyazi/yazi/releases/latest` (`yazi-<arq>-unknown-linux-musl.zip`) |
+| uv | `astral.sh/uv/install.sh` |
 
 **Manjaro**
 
 | Origen | Paquetes |
 |---|---|
-| Repositorios oficiales | `base-devel`, `git`, `nodejs-lts`, `pnpm`, `bun`, `rustup`, `tailscale`, `github-cli`, `docker`, `docker-compose`, `docker-buildx`, `yay`, `sqlite` |
+| Repositorios oficiales | `base-devel`, `git`, `nodejs-lts`, `pnpm`, `bun`, `rustup`, `tailscale`, `github-cli`, `docker`, `docker-compose`, `docker-buildx`, `yay`, `sqlite`, `uv` |
 | AUR | `brave-nightly-bin`, `google-chrome`, `flutter-bin`, `whatsdesk-bin`, `espanso-wayland` / `espanso-x11`, `claude-desktop`, `claude-code`, `opencode-bin`, `antigravity-ide`, `cursor-bin`, `visual-studio-code-bin` |
 
 Todas las descargas que se ejecutan como script se bajan primero a un archivo temporal
