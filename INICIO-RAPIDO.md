@@ -32,7 +32,7 @@ cd linux-configuration-helper
 ## 4. Responder las tres preguntas
 
 **PASO 1 · ¿Para qué sistema es esta configuración?**
-`1) Ubuntu (linux conf)` o `2) Manjaro (manjaro conf)`. El instalador detecta el sistema actual y lo
+`1) Manjaro (manjaro conf)` o `2) Ubuntu (linux conf)`. El instalador detecta el sistema actual y lo
 propone con solo pulsar Enter. Si eliges una distro que no corresponde a este equipo, vuelve a
 preguntar.
 
@@ -40,10 +40,13 @@ preguntar.
 `1) Escritorio` (PC o portátil con disco interno) o `2) USB` (sistema portable, con optimizaciones
 para reducir escrituras). Si detecta que el sistema actual está en una USB, propone `2`.
 
-**PASO 3 · ¿Qué editores de código quieres?**
-Antigravity IDE, Cursor y/o VS Code. Puedes elegir varios con `1 3`, `1,3`, `13` o `todos`;
-siempre al menos uno. Si un editor que **no** elegiste ya está instalado, más adelante te preguntará
-si lo conservas o lo desinstala.
+**PASO 3 · ¿Qué quieres instalar y configurar?**
+Una sola lista con todo el catálogo, **editores e IDEs incluidos** (Antigravity, Cursor, VS Code),
+agrupado en secciones de colores. Todo viene marcado y lo ya instalado lleva `✔ ya instalado`;
+al pasar por cada programa ves abajo qué hace. Desmarca con **Espacio** lo que no quieras (sobre el
+título de una sección, la sección entera), `a` marca todo, `n` nada, **Enter** confirma y `q` cancela.
+Si desmarcas un editor que ya tienes instalado, más adelante te preguntará si lo conservas o lo
+desinstala.
 
 ## 5. Revisar la auditoría y confirmar
 
@@ -74,7 +77,7 @@ una vez y lo mantiene activo mientras trabaja.
    equipo (no solo lo que se instaló ahora). Suelen incluir:
    ```bash
    gh auth login                 # GitHub CLI
-   newgrp docker                 # Docker sin sudo (o cerrar sesión)
+   newgrp docker                 # Docker sin sudo (si marcaste «Docker sin sudo»; o cierra sesión)
    sudo tailscale up             # conectar la VPN
    exec $SHELL                   # cargar las rutas de Node, pnpm, bun…
    ```
@@ -90,13 +93,16 @@ una vez y lo mantiene activo mientras trabaja.
 | Si instalaste… | Haz esto |
 |---|---|
 | Zsh / Oh My Zsh / Powerlevel10k | Elige la fuente **MesloLGS NF** en tu terminal y ejecuta `p10k configure`. |
-| Node, pnpm, Bun, Rust, herdr | Abre una **terminal nueva** (o `exec $SHELL`). |
-| Docker | `newgrp docker` o cierra sesión y vuelve a entrar. |
+| Node, pnpm, Bun, Rust, herdr CLI | Abre una **terminal nueva** (o `exec $SHELL`). |
+| herdr App | Ábrela desde el menú de aplicaciones como **Herdr** (o `herdr-app`). |
+| Docker sin sudo | `newgrp docker` o cierra sesión y vuelve a entrar. |
+| Espanso | Escribe `:espanso` en cualquier app para probarlo; tus atajos con `espanso edit`. |
 | GitHub CLI | `gh auth login`. |
 | Playwright CLI | `playwright-cli install-browser` (en Ubuntu, añade `--with-deps`). |
 | Tailscale | `sudo tailscale up` y autoriza la URL. |
 | CLIs de IA (Claude Code, Gemini, Codex, OpenCode) | Ejecuta cada una una vez para iniciar sesión. |
-| AppFlowy y su respaldo | `appflowy-data-backup.sh` para el menú; comprueba que el repo sea **privado**. |
+| Status line de Claude Code | Abre `claude` (o manda un mensaje en una sesión abierta): verás git, contexto y límites de 5 h / semanal bajo el prompt. |
+| Claude Desktop | Ábrela como **Claude** desde el menú e inicia sesión; para Cowork, `sudo usermod -aG kvm $USER` y vuelve a entrar. |
 
 ## 9. Instalación sin preguntas
 

@@ -23,8 +23,7 @@ Convención: **Ubuntu** = `linux conf` (apt, snap y repositorios externos) · **
 5. [Solo Manjaro](#5-solo-en-manjaro-manjaro-conf)
 6. [Dependencias entre ítems](#6-dependencias-entre-ítems)
 7. [Orígenes externos](#7-orígenes-externos)
-8. [Respaldo semanal de AppFlowy a GitHub](#8-respaldo-semanal-de-appflowy-a-github)
-9. [Mantener este documento actualizado](#9-mantener-este-documento-actualizado)
+8. [Mantener este documento actualizado](#8-mantener-este-documento-actualizado)
 
 ---
 
@@ -74,16 +73,30 @@ mismo comportamiento en ambas distros.
 | Tailscale | `tailscale` | instalador oficial + `systemctl enable tailscaled` | pacman `tailscale` + servicio | `tailscale version` y servicio habilitado | utilidades base (solo Ubuntu) |
 | GitHub CLI | `gh` | repositorio apt oficial de GitHub | `github-cli` (repo) | `gh --version` | utilidades base (solo Ubuntu) |
 | Playwright CLI | `playwright-cli` | `npm -g @playwright/cli@latest` | igual, con prefijo `~/.npm-global` (sin sudo) | `playwright-cli --version` | Node (`nvm-node` / `entorno-js`) |
-| herdr | `herdr` | instalador oficial → `~/.local/bin` | igual | `herdr --version` | utilidades base (solo Ubuntu) |
-| Docker + Compose + Buildx | `docker` | repositorio oficial `docker-ce` + `usermod -aG docker` | pacman `docker docker-compose docker-buildx` + grupo | `docker --version`, `docker compose version`, grupo y servicio | utilidades base (solo Ubuntu) |
+| herdr CLI (terminal) | `herdr` | instalador oficial (`herdr.dev/install.sh`, comprueba SHA-256) → `~/.local/bin/herdr` | igual | `herdr --version` | utilidades base (solo Ubuntu) |
+| herdr App (escritorio) | `herdr-app` | instalador oficial (`releases.herdr.dev/app/install.sh`) → `~/.local/share/herdr-app`, enlace `~/.local/bin/herdr-app`, entrada en el menú e icono; instala `herdr-core` (`hc`) si no existe | igual | ejecutable `herdr-app` y archivo `.desktop` presentes | utilidades base (solo Ubuntu) |
+| Neovim | `neovim` | binario oficial de GitHub en `/opt/nvim-linux-<arq>` + enlace en `/usr/local/bin/nvim`; `ripgrep fd-find`; retira el `neovim` antiguo de apt (módulo 06) | pacman `neovim ripgrep fd` (módulo 03) | `nvim --version` ≥ 0.10 (Ubuntu) / `nvim --version` | utilidades base (solo Ubuntu) |
+| lazygit | `lazygit` | binario de la última release de GitHub → `/usr/local/bin` (módulo 06) | pacman `lazygit` (módulo 03) | `lazygit --version` | utilidades base (solo Ubuntu) |
+| Yazi | `yazi` | binarios estáticos (musl) `yazi` y `ya` de GitHub → `/usr/local/bin` + `fd-find ripgrep fzf zoxide jq poppler-utils` (módulo 06) | pacman `yazi fd ripgrep fzf zoxide jq poppler` (módulo 03) | `yazi --version` | utilidades base (solo Ubuntu) |
+| Claude Desktop (app de escritorio) | `claude-desktop` | **oficial** (beta, Ubuntu 22.04+, amd64/arm64): repositorio apt de Anthropic; la clave se acepta solo si su huella es `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE` | AUR `claude-desktop` (reempaquetado del `.deb` oficial: Anthropic no publica para Arch) | paquete `claude-desktop` y comando `claude-desktop` (Ubuntu) / comando | utilidades base / `yay` |
+| Claude Code CLI (terminal) | `claude-code` | `npm -g @anthropic-ai/claude-code` | AUR `claude-code` | comando `claude` | `nvm-node` / `yay` |
+| Status line de Claude Code | `claude-statusline` | copia `claude/statusline.py` a `~/.claude/statusline.py` y añade el bloque `statusLine` a `~/.claude/settings.json` con `claude/instalar-statusline.py` (conserva el resto de ajustes, hace copia `settings.json.bak-<fecha>` y no escribe nada si el JSON está roto); instala `python3` si falta (módulo 03) | igual, con `python` (módulo 06) | script idéntico al del repo, `statusLine.command` apuntándole y prueba con datos de ejemplo | — |
+| Docker + Compose + Buildx | `docker` | repositorio oficial `docker-ce` + servicio | pacman `docker docker-compose docker-buildx` + servicio | `docker --version`, `docker compose version` y servicio habilitado | utilidades base (solo Ubuntu) |
+| Docker sin sudo | `docker-sin-sudo` | pasos post-instalación oficiales: grupo `docker` (lo crea si falta) + `usermod -aG docker`, `~/.docker` a tu nombre, `docker` y `containerd` al arranque | igual | grupo existe y te incluye, `~/.docker` es tuyo y servicio habilitado | `docker` |
+| Espanso (expansor de texto) | `espanso` | `.deb` oficial de GitHub `espanso-debian-<wayland\|x11>-amd64` según la sesión; `setcap` en Wayland; `espanso service register` + `start` (módulo 08) | AUR `espanso-wayland` o `espanso-x11` según la sesión (se compila) + mismos pasos (módulo 07) | `espanso --version` y servicio de usuario registrado | utilidades base / `yay` |
 | Antigravity IDE | `antigravity` | repositorio apt de Google | AUR `antigravity-ide` | comando `antigravity` | utilidades base / `yay` |
 | Cursor | `cursor` | `.deb` oficial (solo amd64) | AUR `cursor-bin` | comando `cursor` | utilidades base / `yay` |
 | VS Code | `vscode` | repositorio apt de Microsoft | AUR `visual-studio-code-bin` (el original de Microsoft) | comando `code` y paquete (Ubuntu) | utilidades base / `yay` |
-| AppFlowy | `appflowy` | `.deb` oficial de GitHub (última versión, solo amd64) | AUR `appflowy-bin` | paquete y binario `/usr/lib/AppFlowy/AppFlowy` (Ubuntu) | utilidades base / `yay` |
-| Respaldo de AppFlowy | `appflowy-backup` | script copiado a `~/.local/bin` + servicio de usuario + `git` y `sqlite3` | igual, con `sqlite` | script idéntico, herramientas y daemon instalados | utilidades base / `base-devel` |
 | Limpieza final | `limpieza` | `autoremove` + `autoclean` + `clean` | caché de pacman/yay + huérfanos (`pacman -Qtdq`) | **Tarea**: se ejecuta siempre | — |
 
-> Los editores se eligen en el PASO 3 del menú (uno o varios). Si un editor que no elegiste está
+> **Claude** también son dos ítems independientes: marca `Claude Desktop`, `Claude Code CLI` o ambos.
+> Para usar **Cowork** en la app de escritorio, tu usuario debe estar en el grupo `kvm` (el resumen
+> final te lo indica si falta).
+>
+> **herdr** son dos ítems independientes: en la lista del PASO 3 marca `herdr CLI`, `herdr App` o
+> ambos (`--solo herdr` / `--solo herdr-app` / `--omitir …` también funcionan).
+>
+> Los editores e IDEs se eligen en la misma lista del PASO 3 (uno, varios o ninguno). Si un editor que no elegiste está
 > instalado, el instalador pregunta si conservarlo o desinstalarlo; en ese caso añade un ítem
 > `purga-<editor>` justo antes de la limpieza. Ver [GUIA-DE-USO.md](GUIA-DE-USO.md#6-editores-de-código).
 
@@ -94,7 +107,6 @@ mismo comportamiento en ambas distros.
 | Programa / configuración | id | Cómo se instala | Verificación | Depende de |
 |---|---|---|---|---|
 | Gemini CLI | `gemini-cli` | `npm -g @google/gemini-cli` | `gemini --version` | `nvm-node` |
-| Claude Code (CLI) | `claude-code` | `npm -g @anthropic-ai/claude-code` | `claude --version` | `nvm-node` |
 | Codex CLI | `codex` | `npm -g @openai/codex` | `codex --version` | `nvm-node` |
 | OpenCode | `opencode` | `npm -g opencode-ai` | `opencode --version` | `nvm-node` |
 | Hermes Agent (Nous Research) | `hermes` | instalador oficial con `--skip-setup` (sin asistente) | comando `hermes` | `utilidades-base` |
@@ -120,7 +132,7 @@ mismo comportamiento en ambas distros.
   `codecs`, `vlc`, `mpv`, `variety` y `wallpapers` no existen en el catálogo de Manjaro.
 - `pnpm`, `gemini-cli`, `claude-code`, `codex`, `opencode` y `playwright-cli` se instalan como
   paquetes globales de npm y por eso dependen de `nvm-node` (Node LTS).
-- `bun`, `hermes`, `tailscale`, `gh`, `herdr`, `wave`, `docker` y `appflowy` usan el instalador o
+- `bun`, `hermes`, `tailscale`, `gh`, `herdr`, `herdr-app`, `neovim`, `lazygit`, `yazi`, `wave` y `docker` usan el instalador o
   repositorio oficial, no el repositorio de Ubuntu.
 
 ---
@@ -134,7 +146,9 @@ se indica lo que el propio instalador deshace (si algo) y lo que queda a tu carg
 |---|---|---|---|
 | Repositorios apt externos | `/etc/apt/sources.list.d/`: `brave-browser-nightly`, `docker.sources`, `vscode.list`, `antigravity.list`, `github-cli.list`; PPA de LibreOffice; `multiverse` | — | Borrar el archivo del repo y la clave de `/etc/apt/keyrings`. |
 | Claves de repositorios | `/etc/apt/keyrings/`: Brave, `docker.asc`, `packages.microsoft.gpg`, `antigravity-repo-key.gpg`, `githubcli-archive-keyring.gpg` | Llavero de pacman (`pacman-key`) | Al desinstalar el paquete correspondiente. |
-| Grupo `docker` | `usermod -aG docker $USER` | igual | `sudo gpasswd -d $USER docker`. |
+| Grupo `docker` (ítem `docker-sin-sudo`) | `groupadd docker` si falta + `usermod -aG docker $USER`; `chown` de `~/.docker` | igual | `sudo gpasswd -d $USER docker`. |
+| Status line de Claude Code | `~/.claude/statusline.py` y bloque `statusLine` en `~/.claude/settings.json` | igual | Restaurar `settings.json.bak-<fecha>` o borrar el bloque `statusLine`. |
+| Espanso | servicio de usuario `~/.config/systemd/user/espanso.service`; en Wayland, capacidad `cap_dac_override` en el binario | igual | `espanso service unregister` y desinstalar el paquete. |
 | Servicios habilitados | `docker`, `postgresql`, `tailscaled` | `docker`, `tailscaled` | `sudo systemctl disable --now <unidad>`. |
 | Shell por defecto | `chsh -s $(command -v zsh)` + `/etc/shells` | — | `chsh -s /bin/bash`. |
 | `~/.zshrc` | Tema, plugins, `POWERLEVEL9K_INSTANT_PROMPT=off`, bloques NVM/pnpm/bun, banner y PATH (idempotente, con marcadores) | — | Quitar los bloques marcados. |
@@ -151,7 +165,6 @@ se indica lo que el propio instalador deshace (si algo) y lo que queda a tu carg
 | `/etc/fstab` | `noatime` en entradas `ext4/btrfs/xfs/f2fs`, con respaldo `/etc/fstab.bak-new-linux-conf` | igual | Restaurar el respaldo y remontar. |
 | `/tmp` en RAM | `tmp.mount` habilitado | igual | `sudo systemctl disable tmp.mount`. |
 | Perfiles de navegador | `profile-sync-daemon` + `psd.service` de usuario | igual | `systemctl --user disable psd.service`. |
-| Respaldo de AppFlowy | `~/.local/bin/appflowy-data-backup.sh`, servicio de usuario y `~/.config/appflowy-data-backup/config` | igual | `appflowy-data-backup.sh --uninstall-daemon`. |
 
 Con **destino Escritorio** se ejecuta `usb-revertir`, que solo elimina los archivos que llevan la
 marca `Generado por new-linux-conf (modo USB)`; nunca toca configuraciones ajenas. `zram` queda
@@ -166,15 +179,13 @@ desactivado tras reiniciar. Los archivos del modo USB se detallan en la
 |---|---|---|---|---|
 | yay (ayudante de AUR) | `yay` | repo; si no está, compila `yay-bin` desde AUR con `makepkg` | `yay --version` | `base-devel` |
 | Rust | `rust` | `rustup` + `rustup default stable` | `rustc --version` | — |
-| Claude Desktop | `claude-desktop` | AUR `claude-desktop` | comando `claude-desktop` | `yay` |
-| Claude Code (CLI) | `claude-code` | AUR `claude-code` | comando `claude` | `yay` |
 | OpenCode | `opencode` | AUR `opencode-bin` | comando `opencode` | `yay` |
 | WhatsDesk (WhatsApp) | `whatsdesk` | AUR `whatsdesk-bin` | comando `whatsdesk` | `yay` |
 | Rutas globales de JS | `entorno-js` | `npm config set prefix ~/.npm-global` y líneas de PATH en `~/.zshrc` y `~/.bashrc` | prefijo de npm y líneas presentes | `nodejs` |
 
 **Notas de Manjaro**
 
-- **Todos** los paquetes de AUR (`brave`, `chrome`, `flutter`, `appflowy`, `whatsdesk`, los tres
+- **Todos** los paquetes de AUR (`brave`, `chrome`, `flutter`, `whatsdesk`, `espanso`, los tres
   editores y las herramientas de IA) dependen de `yay`, que instala el módulo `01`.
 - No hay NVM: Node es el `nodejs-lts` del sistema y las herramientas globales de npm se instalan sin
   `sudo` gracias al prefijo `~/.npm-global` de `entorno-js`.
@@ -199,7 +210,10 @@ entorno-js (Manjaro) ──> playwright-cli
 **Ubuntu**
 
 ```
-utilidades-base ──> bun · hermes · tailscale · gh · herdr · docker · wave · appflowy · appflowy-backup
+utilidades-base ──> bun · hermes · tailscale · gh · herdr · herdr-app · claude-desktop · docker · wave
+                   · espanso
+docker ───────────> docker-sin-sudo
+                   · neovim · lazygit · yazi
                    · libreoffice · codecs · vscode · antigravity · cursor
 nvm-node ─────────> pnpm · gemini-cli · claude-code · codex · opencode · playwright-cli
 zsh-paquetes ─────> oh-my-zsh · fuente-cascadia · fuente-meslo · shell-zsh
@@ -210,10 +224,11 @@ p10k ─────────────> zshrc
 **Manjaro**
 
 ```
-base-devel ──> yay · appflowy-backup
-yay ─────────> brave · chrome · flutter · appflowy · whatsdesk · claude-desktop · claude-code
+base-devel ──> yay
+yay ─────────> brave · chrome · flutter · whatsdesk · espanso · claude-desktop · claude-code
                · opencode · antigravity · cursor · vscode
 nodejs ──────> entorno-js
+docker ──────> docker-sin-sudo
 entorno-js ──> playwright-cli
 ```
 
@@ -234,7 +249,6 @@ entorno-js ──> playwright-cli
 | LibreOffice | `ppa:libreoffice/ppa` |
 | Cursor | `downloader.cursor.sh/deb/x64` |
 | Wave Terminal | última release de `wavetermdev/waveterm` (API de GitHub) |
-| AppFlowy | última release de `AppFlowy-IO/AppFlowy` (API de GitHub) |
 | Wallpapers | `github.com/victorcarrillodev/wallpapers` |
 | NVM | `raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh` |
 | Oh My Zsh | instalador oficial de `ohmyzsh/ohmyzsh` |
@@ -242,63 +256,35 @@ entorno-js ──> playwright-cli
 | Bun | `bun.sh/install` |
 | Tailscale | `tailscale.com/install.sh` |
 | Hermes Agent | `hermes-agent.nousresearch.com/install.sh` |
-| herdr | `herdr.dev/install.sh` |
+| herdr CLI | `herdr.dev/install.sh` |
+| Espanso | última release de `espanso/espanso` (`espanso-debian-<wayland|x11>-amd64.deb`) |
+| Claude Desktop | `downloads.claude.ai/claude-desktop/apt/stable` (clave `downloads.claude.ai/claude-desktop/key.asc`, huella verificada) |
+| herdr App | `releases.herdr.dev/app/install.sh` |
+| Neovim | `github.com/neovim/neovim/releases/latest` (`nvim-linux-x86_64` / `arm64`) |
+| lazygit | última release de `jesseduffield/lazygit` (API de GitHub) |
+| Yazi | `github.com/sxyazi/yazi/releases/latest` (`yazi-<arq>-unknown-linux-musl.zip`) |
 
 **Manjaro**
 
 | Origen | Paquetes |
 |---|---|
 | Repositorios oficiales | `base-devel`, `git`, `nodejs-lts`, `pnpm`, `bun`, `rustup`, `tailscale`, `github-cli`, `docker`, `docker-compose`, `docker-buildx`, `yay`, `sqlite` |
-| AUR | `brave-nightly-bin`, `google-chrome`, `flutter-bin`, `appflowy-bin`, `whatsdesk-bin`, `claude-desktop`, `claude-code`, `opencode-bin`, `antigravity-ide`, `cursor-bin`, `visual-studio-code-bin` |
+| AUR | `brave-nightly-bin`, `google-chrome`, `flutter-bin`, `whatsdesk-bin`, `espanso-wayland` / `espanso-x11`, `claude-desktop`, `claude-code`, `opencode-bin`, `antigravity-ide`, `cursor-bin`, `visual-studio-code-bin` |
 
 Todas las descargas que se ejecutan como script se bajan primero a un archivo temporal
 (`run_remote_script`): si la descarga falla, no se ejecuta nada a medias.
 
 ---
 
-## 8. Respaldo semanal de AppFlowy a GitHub
-
-`appflowy-data-backup.sh` se instala **igual en ambas distros**: se copia a `~/.local/bin` (copia, no
-enlace, para que siga funcionando si borras esta carpeta) y se registra como servicio de usuario de
-systemd. Añade `git` y `sqlite3`/`sqlite` a la instalación.
-
-```bash
-appflowy-data-backup.sh                 # menú interactivo
-appflowy-data-backup.sh --backup        # respaldar ahora (--hot si AppFlowy está abierto)
-appflowy-data-backup.sh --restore       # restaurar (--restore <hash> --yes para uno concreto)
-appflowy-data-backup.sh --list          # respaldos disponibles
-appflowy-data-backup.sh --status        # repo, visibilidad, daemon, último respaldo
-appflowy-data-backup.sh --install-daemon / --uninstall-daemon
-```
-
-- **Qué guarda:** todo `~/.local/share/io.appflowy.appflowy` (notas, bases de datos, imágenes), con
-  las bases SQLite copiadas de forma consistente. Excluye logs, archivos de bloqueo y
-  `shared_preferences.json` (puede contener tu sesión). Además **vacía los tokens de sesión**
-  (`user_table.token`) en la *copia* de la base de datos —tu original no se toca—, así que tras
-  restaurar hay que iniciar sesión de nuevo. Los archivos de más de 90 MB se omiten porque GitHub
-  rechaza más de 100 MB.
-- **Daemon:** `appflowy-data-backup.service` comprueba cada 30 minutos si pasaron 7 días desde el
-  último respaldo; si el equipo estuvo apagado, respalda al volver. Si AppFlowy está abierto, espera
-  (hasta 24 h) para copiar con la aplicación cerrada. Los fallos se reintentan con espera creciente.
-- **Restaurar:** antes de pisar nada guarda tu estado actual en `~/.local/share/appflowy-data-backup/pre-restore/`
-  y exige que AppFlowy esté cerrado. Conserva tu sesión local.
-- **Repositorio:** `https://github.com/victorcarrillodev/appflowy-backup.git` (cámbialo en
-  `~/.config/appflowy-data-backup/config` con `REPO_URL=...`). Usa tu sesión de `gh`.
-
-> **El repositorio debe ser PRIVADO.** Tus notas se suben tal cual. Antes de cada subida el script
-> comprueba la visibilidad y **se niega a subir si es público** (o si no puede comprobarlo; códigos
-> de `--check-repo`: `3` público, `4` no verificable, `5` inexistente o sin acceso).
-> Hazlo privado con:
-> `gh repo edit victorcarrillodev/appflowy-backup --visibility private --accept-visibility-change-consequences`
-
----
-
-## 9. Mantener este documento actualizado
+## 8. Mantener este documento actualizado
 
 - **Añadir algo a una sola distro:** regístralo en su carpeta (`ubuntu/` o `manjaro/`).
 - **Añadirlo a las dos:** regístralo en el módulo equivalente de **cada** distro con el **mismo id**
-  (como hacen `gh`, `playwright-cli`, `herdr` y `appflowy`); si el instalador es idéntico, define sus
+  (como hacen `gh`, `playwright-cli`, `herdr` y `herdr-app`); si el instalador es idéntico, define sus
   funciones una sola vez en `comun/10-herramientas-comunes.sh`.
+- **Descripción en la lista del PASO 3:** tras registrarlo, añade `describe <id> "qué es y para qué
+  sirve"`; se muestra abajo en la lista al pasar el cursor y en `./init.sh --listar`. Si es común a
+  las dos distros, ponla en `comun/10-herramientas-comunes.sh` (como `describe_terminal_tools`).
 - Después actualiza este archivo. Para comprobar qué ids comparten las dos distros:
 
 ```bash

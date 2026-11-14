@@ -31,7 +31,7 @@ post_comun() {
     fi
 
     # 4) Docker: el grupo solo se aplica en una sesión nueva
-    if item_ok docker && ! user_in_session_group docker; then
+    if item_ok docker-sin-sudo && ! user_in_session_group docker; then
         add_manual_step "${BOLD}Cierra sesión y vuelve a entrar${RESET} (o ejecuta ${BOLD}newgrp docker${RESET}) para usar Docker sin sudo."
     fi
 
@@ -61,26 +61,25 @@ post_comun() {
     item_new gh && add_manual_step "Inicia sesión en GitHub CLI: ${BOLD}gh auth login${RESET}."
     item_new playwright-cli && add_manual_step "Playwright CLI descarga su navegador la primera vez que lo usas; para dejarlo listo ya: ${BOLD}playwright-cli install-browser${RESET} (en Ubuntu añade ${BOLD}--with-deps${RESET} para las librerías del sistema)."
 
-    # 8c) Respaldo de AppFlowy: el repositorio DEBE ser privado y hay que tener sesión de GitHub
-    if item_ok appflowy-backup; then
-        local afb="$HOME/.local/bin/appflowy-data-backup.sh" afb_rc=0
-        "$afb" --check-repo >/dev/null 2>&1 || afb_rc=$?
-        case "$afb_rc" in
-            3) add_manual_step "${BOLD}⚠ URGENTE:${RESET} el repositorio de respaldo de AppFlowy es ${BOLD}PÚBLICO${RESET}: tus notas serían visibles para todos. El daemon NO sube nada mientras sea público. Hazlo privado: ${BOLD}gh repo edit victorcarrillodev/appflowy-backup --visibility private --accept-visibility-change-consequences${RESET}" ;;
-            5) add_manual_step "El repositorio de respaldo de AppFlowy no existe o no tienes acceso: créalo PRIVADO con ${BOLD}gh repo create victorcarrillodev/appflowy-backup --private${RESET}." ;;
-            4) add_manual_step "No pude comprobar si el repositorio de respaldo de AppFlowy es privado (¿sin conexión?). Compruébalo con ${BOLD}appflowy-data-backup.sh --status${RESET}." ;;
-        esac
-        if has_cmd gh && ! gh auth status >/dev/null 2>&1; then
-            add_manual_step "Inicia sesión en GitHub para que el respaldo de AppFlowy pueda subir: ${BOLD}gh auth login${RESET}."
-        fi
-        item_new appflowy-backup && add_manual_step "Respaldo semanal de AppFlowy activado (un daemon lo hace cada 7 días). Para hacer uno ahora o restaurar tu información ejecuta: ${BOLD}appflowy-data-backup.sh${RESET}"
+    # 8b2) Claude Desktop: Cowork usa una máquina virtual (QEMU/KVM) y necesita el grupo kvm
+    if item_new claude-desktop && ! user_in_group_file kvm; then
+        add_manual_step "Para usar ${BOLD}Cowork${RESET} en Claude Desktop: ${BOLD}sudo usermod -aG kvm \$USER${RESET} y vuelve a iniciar sesión (necesita la virtualización activada en la BIOS)."
     fi
+
+    # 8b3) Espanso
+    item_new espanso && add_manual_step "Prueba ${BOLD}Espanso${RESET}: escribe ${BOLD}:espanso${RESET} en cualquier aplicación. Tus atajos van en ${BOLD}~/.config/espanso/match/base.yml${RESET} (${BOLD}espanso edit${RESET}). En Wayland, tras actualizarlo repite: ${BOLD}sudo setcap \"cap_dac_override+p\" \$(which espanso)${RESET}."
+
+    # 8b4) Status line de Claude Code: se ve al reabrir claude
+    item_new claude-statusline && add_manual_step "La ${BOLD}status line de Claude Code${RESET} aparece al abrir ${BOLD}claude${RESET} (en una sesión ya abierta, tras el siguiente mensaje). Los límites de 5 h y semanal se muestran con una suscripción Pro/Max, tras la primera respuesta."
+
+    # 8c) herdr App: herdr-app y hc quedan en ~/.local/bin
+    item_new herdr-app && add_manual_step "Abre ${BOLD}Herdr${RESET} desde el menú de aplicaciones (o ${BOLD}herdr-app${RESET}); se mantiene actualizada sola."
 
     # 9) Flutter
     item_new flutter && add_manual_step "Verifica Flutter: ${BOLD}flutter doctor${RESET} (para Android: ${BOLD}flutter doctor --android-licenses${RESET})."
 
     # 10) Aplicaciones con cuenta
-    for id in brave chrome vscode cursor antigravity claude-desktop whatsdesk appflowy wave; do
+    for id in brave chrome vscode cursor antigravity claude-desktop whatsdesk wave; do
         if item_new "$id"; then label="${ITEM_LABEL[$id]}"; apps+=("${label%% (*}"); fi
     done
     [ "${#apps[@]}" -gt 0 ] && add_manual_step "Abre e inicia sesión / sincroniza en las aplicaciones nuevas: $(join_by ', ' "${apps[@]}")."

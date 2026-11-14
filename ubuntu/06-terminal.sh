@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# ubuntu/06-terminal.sh — Zsh, Oh My Zsh, Powerlevel10k, fuentes, Wave Terminal, banner y shell por defecto.
+# ubuntu/06-terminal.sh — Zsh, Oh My Zsh, Powerlevel10k, fuentes, Wave Terminal, Neovim, lazygit, Yazi,
+#                         banner y shell por defecto.
 
-section 06 "TERMINAL" "Zsh, Oh My Zsh, Powerlevel10k, fuentes, banner y shell por defecto"
+section 06 "TERMINAL" "Zsh, Oh My Zsh, Powerlevel10k, fuentes, Neovim, lazygit, Yazi, banner y shell por defecto"
 
 FONT_DIR="${HOME}/.local/share/fonts"
 ZSHRC="${HOME}/.zshrc"
@@ -73,6 +74,71 @@ i_wave() {
     pkg_install "${dir}/wave.deb"
 }
 register_item wave "Wave Terminal" v_wave i_wave utilidades-base
+
+# --- Herramientas de terminal: Neovim, lazygit y Yazi ---
+# apt trae un Neovim antiguo (los plugins actuales piden ≥ 0.10) y no tiene lazygit ni Yazi:
+# se instalan los binarios oficiales de GitHub en /opt y /usr/local/bin.
+NVIM_MIN_MINOR=10   # versión mínima aceptada: 0.10
+
+# Versión «0.X» de nvim que hay en el PATH ≥ la mínima
+v_neovim() {
+    local v minor
+    v="$(nvim --version 2>/dev/null | head -1)"      # "NVIM v0.11.4"
+    [[ "$v" =~ NVIM\ v([0-9]+)\.([0-9]+) ]] || return 1
+    minor="${BASH_REMATCH[2]}"
+    [ "${BASH_REMATCH[1]}" -gt 0 ] || [ "$minor" -ge "$NVIM_MIN_MINOR" ]
+}
+i_neovim() {
+    local arch dir
+    case "$(uname -m)" in aarch64|arm64) arch=arm64 ;; *) arch=x86_64 ;; esac
+    pkg_install ripgrep fd-find     # búsqueda rápida para los plugins (Telescope)
+    if pkg_installed neovim; then   # el de apt es antiguo y taparía al nuevo
+        info "Retirando el Neovim antiguo de apt…"
+        pkg_remove neovim neovim-runtime || true
+    fi
+    dir="$(mktemp -d)"; trap 'rm -rf "$dir"' EXIT
+    download "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${arch}.tar.gz" "${dir}/nvim.tar.gz"
+    sudo rm -rf "/opt/nvim-linux-${arch}"
+    sudo tar -C /opt -xzf "${dir}/nvim.tar.gz"
+    sudo ln -sf "/opt/nvim-linux-${arch}/bin/nvim" /usr/local/bin/nvim
+}
+register_item neovim "Neovim (editor en terminal)" v_neovim i_neovim utilidades-base
+
+# github_latest_tag <owner/repo> — imprime la última versión publicada sin la «v» (p. ej. 0.55.1)
+github_latest_tag() {
+    local json
+    json="$(curl -fsSL --retry 3 "https://api.github.com/repos/$1/releases/latest")" || return 1
+    grep -m1 -oE '"tag_name": *"v?[^"]+"' <<< "$json" | sed -E 's/.*"v?([^"]+)"$/\1/'
+}
+
+v_lazygit() { cmd_works lazygit --version; }
+i_lazygit() {
+    local arch ver dir
+    case "$(uname -m)" in aarch64|arm64) arch=arm64 ;; *) arch=x86_64 ;; esac
+    ver="$(github_latest_tag jesseduffield/lazygit)"
+    [ -n "$ver" ] || { error "No se pudo consultar la última versión de lazygit."; return 1; }
+    dir="$(mktemp -d)"; trap 'rm -rf "$dir"' EXIT
+    download "https://github.com/jesseduffield/lazygit/releases/download/v${ver}/lazygit_${ver}_Linux_${arch}.tar.gz" "${dir}/lazygit.tar.gz"
+    tar -xzf "${dir}/lazygit.tar.gz" -C "$dir" lazygit
+    sudo install -m 755 "${dir}/lazygit" /usr/local/bin/lazygit
+}
+register_item lazygit "lazygit (Git visual en terminal)" v_lazygit i_lazygit utilidades-base
+
+# Yazi: binario estático (musl), funciona en cualquier versión de Ubuntu
+v_yazi() { cmd_works yazi --version; }
+i_yazi() {
+    local arch dir
+    case "$(uname -m)" in aarch64|arm64) arch=aarch64 ;; *) arch=x86_64 ;; esac
+    # Complementos para vistas previas y búsquedas (fd se llama «fdfind» en Ubuntu)
+    pkg_install fd-find ripgrep fzf zoxide jq poppler-utils
+    dir="$(mktemp -d)"; trap 'rm -rf "$dir"' EXIT
+    download "https://github.com/sxyazi/yazi/releases/latest/download/yazi-${arch}-unknown-linux-musl.zip" "${dir}/yazi.zip"
+    unzip -q "${dir}/yazi.zip" -d "$dir"
+    sudo install -m 755 "${dir}/yazi-${arch}-unknown-linux-musl/yazi" /usr/local/bin/yazi
+    sudo install -m 755 "${dir}/yazi-${arch}-unknown-linux-musl/ya"   /usr/local/bin/ya
+}
+register_item yazi "Yazi (gestor de archivos en terminal)" v_yazi i_yazi utilidades-base
+describe_terminal_tools
 
 # --- Powerlevel10k y plugins de Zsh ---
 v_p10k() {

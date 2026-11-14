@@ -16,6 +16,7 @@ source "${SCRIPT_DIR}/lib/ui.sh"
 source "${SCRIPT_DIR}/lib/checks.sh"
 source "${SCRIPT_DIR}/lib/shellrc.sh"
 source "${SCRIPT_DIR}/lib/core.sh"
+source "${SCRIPT_DIR}/lib/checklist.sh"
 source "${SCRIPT_DIR}/lib/menu.sh"
 
 ONLY=()
@@ -29,9 +30,11 @@ print_help() {
 Uso: ./init.sh [OPCIONES]
 
 Sin opciones se muestra un menú que pregunta:
-  1) el sistema:  Ubuntu (linux conf)  o  Manjaro (manjaro conf)
+  1) el sistema:  Manjaro (manjaro conf)  o  Ubuntu (linux conf)
   2) el destino:  Escritorio  o  USB (portable, con optimizaciones)
-  3) los editores de código: Antigravity IDE, Cursor y/o VS Code (al menos uno)
+  3) qué programas, editores/IDEs, recursos y configuraciones instalar (lista con casillas)
+
+En las listas: ↑/↓ mover · Espacio marcar/desmarcar · a todo · n nada · Enter confirmar · q salir
 
 Opciones:
   --sistema ubuntu|manjaro     Elige el sistema sin preguntar
@@ -39,6 +42,8 @@ Opciones:
   --solo <n|id>                Ejecuta solo ese módulo (ej: 03) o ítem (ej: docker). Repetible
   --omitir <n|id>              Salta ese módulo o ítem. Repetible
   --solo-usb                   Solo aplica las optimizaciones para USB y termina
+  --sin-lista                  No muestra la lista del PASO 3: instala todo el catálogo
+                               (los editores se preguntan aparte)
   --listar                     Muestra los módulos e ítems del sistema elegido
   --simular                    No instala nada: muestra lo que haría
   --sin-pausa                  No espera 2 s entre instalaciones
@@ -74,6 +79,7 @@ parse_args() {
             --listar|--list|-l) LIST_ONLY=1 ;;
             --simular|--dry-run) DRY_RUN=1 ;;
             --sin-pausa) PAUSE_SECONDS=0 ;;
+            --sin-lista|--todo) SKIP_ITEM_LIST=1 ;;
             --yes|-y|--si) ASSUME_YES=1 ;;
             *) error "Opción desconocida: $1"; echo; print_help; exit 1 ;;
         esac
@@ -178,7 +184,9 @@ list_catalog() {
     for sec in "${SECTION_IDS[@]}"; do
         printf '%s\n' "${BOLD}${WHITE}${sec} · ${SECTION_NAME[$sec]}${RESET} ${DIM}— ${SECTION_DESC[$sec]}${RESET}"
         for id in "${ITEM_IDS[@]}"; do
-            [ "${ITEM_SECTION[$id]}" = "$sec" ] && printf '     %-22s %s\n' "$id" "${ITEM_LABEL[$id]}"
+            [ "${ITEM_SECTION[$id]}" = "$sec" ] || continue
+            printf '     %-22s %s\n' "$id" "${ITEM_LABEL[$id]}"
+            [ -n "${ITEM_DESC[$id]:-}" ] && printf '     %-22s %s\n' "" "${DIM}${ITEM_DESC[$id]}${RESET}"
         done
         echo
     done
@@ -227,12 +235,27 @@ main() {
         DISTRO_ID=""
     done
     choose_target
-    if editors_needed_for_plan; then choose_editors; else EDITORS_SELECTED=""; fi
+    # Con la lista de casillas, los editores se eligen ahí junto a todo lo demás (PASO 3).
+    # Sin lista (--yes, --solo, --sin-lista o sin terminal) se usa la pregunta de editores clásica.
+    if ! editors_needed_for_plan; then
+        EDITORS_SELECTED=""
+    elif item_list_enabled; then
+        EDITORS_SELECTED="${EDITOR_ITEMS[*]}"
+    else
+        choose_editors
+    fi
 
     load_catalog
     build_active
     if [ "${#ACTIVE_IDS[@]}" -eq 0 ]; then
         warn "Con las opciones indicadas no hay nada que ejecutar. Usa --listar para ver los módulos."
+        exit 0
+    fi
+
+    # PASO 3: lista con casillas para elegir qué instalar, editores incluidos (se omite con --solo, --yes o --sin-lista)
+    choose_items
+    if [ "${#ACTIVE_IDS[@]}" -eq 0 ]; then
+        warn "No marcaste nada: no hay nada que instalar."
         exit 0
     fi
 

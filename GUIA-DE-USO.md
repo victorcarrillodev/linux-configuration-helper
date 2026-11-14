@@ -40,11 +40,23 @@ El **código de salida** es `0` si ningún ítem quedó en `failed`, y distinto 
 ```
 
 1. **Banner** y comprobación de que no eres root.
-2. **PASO 1 · Sistema**: Ubuntu o Manjaro, con el actual propuesto por defecto. Si eliges una distro
+2. **PASO 1 · Sistema**: `1` Manjaro o `2` Ubuntu, con el actual propuesto por defecto. Si eliges una distro
    cuyo gestor de paquetes no existe en el equipo, vuelve a preguntar (con `--sistema` aborta y pide
    corregir la opción).
 3. **PASO 2 · Destino**: Escritorio o USB. Si detecta que `/` está en un dispositivo USB, propone USB.
-4. **PASO 3 · Editores**: solo aparece si el plan incluye el módulo de editores.
+4. **PASO 3 · Qué instalar**: una sola lista con casillas de todo el plan, **editores e IDEs
+   incluidos**, agrupada en secciones (cada título con su color, en negrita y separado del resto),
+   con `✔ ya instalado` donde corresponde y la descripción del ítem bajo el cursor. No aparece con
+   `--solo`, `--yes`, `--sin-lista` ni cuando la entrada no es una terminal: en esos casos se
+   instala todo el plan y los editores se preguntan aparte (`--yes` = los tres).
+
+   Teclas de las listas: **↑/↓** o `j`/`k` mover · **RePág/AvPág** saltar página · **Inicio/Fin** ·
+   **Espacio** marcar/desmarcar (sobre una sección: toda la sección; `[~]` = sección parcial) ·
+   `a` todo · `n` nada · **Enter** confirmar · `q`/**Esc** cancelar sin tocar nada.
+
+   Dependencias: marcar un ítem marca lo que necesita (si no está instalado); desmarcar algo no
+   instalado desmarca lo que depende de ello. Al confirmar, si un editor necesita algo desmarcado
+   (p. ej. `yay` en Manjaro) y no está instalado, se vuelve a añadir con un aviso.
 5. **Auditoría** de solo lectura de lo que hay y lo que falta.
 6. **Confirmación** («¿Continuar con la instalación?»).
 7. `sudo` una vez y **ejecución del plan**.
@@ -62,6 +74,7 @@ El **código de salida** es `0` si ningún ítem quedó en `failed`, y distinto 
 | `--listar`, `--list`, `-l` | — | Muestra módulos e ítems y termina. |
 | `--simular`, `--dry-run` | — | No instala, no pide `sudo`, no modifica nada. |
 | `--sin-pausa` | — | Quita la pausa de 2 s tras cada ítem. |
+| `--sin-lista`, `--todo` | — | No muestra la lista del PASO 3: instala todo el plan (editores aparte). |
 | `--yes`, `-y`, `--si` | — | Acepta las respuestas por defecto. |
 | `--ayuda`, `--help`, `-h` | — | Ayuda y salida. |
 
@@ -85,8 +98,8 @@ Detalles que conviene conocer:
 
 - Se aceptan ids (`docker`, `nvm-node`) y números de módulo (`04`, `06`).
 - `--solo` y `--omitir` se aplican a la vez: primero se limita, después se descarta.
-- Los editores se filtran con la selección del PASO 3; si `--solo`/`--omitir` excluye el módulo de
-  editores, esa pregunta no aparece.
+- Los editores se filtran con lo marcado en la lista (o con la pregunta de editores cuando no hay
+  lista); si `--solo`/`--omitir` excluye el módulo de editores, no se pregunta nada.
 - Si el plan queda vacío, el script avisa y sale sin hacer nada.
 - Ejecutar un ítem aislado no instala sus dependencias: si la dependencia no está ya en el equipo,
   el ítem se omite con el motivo (`--solo playwright-cli` sin Node instalado, por ejemplo).
@@ -123,7 +136,9 @@ reiniciar.
 
 ## 6. Editores de código
 
-Se eligen siempre en el PASO 3 (o con `--yes`, que instala los tres).
+Se eligen en la lista del PASO 3, en la sección **EDITORES E IDES**, junto a todo lo demás (uno,
+varios o ninguno). Sin lista (`--sin-lista`, `--solo 05`, sin terminal) se pregunta aparte, y con
+`--yes` se instalan los tres.
 
 | Elección | Ubuntu | Manjaro |
 |---|---|---|
@@ -131,7 +146,8 @@ Se eligen siempre en el PASO 3 (o con `--yes`, que instala los tres).
 | Cursor | `.deb` oficial (solo amd64) | AUR `cursor-bin` |
 | VS Code | repositorio apt de Microsoft | AUR `visual-studio-code-bin` |
 
-- Sintaxis de selección: `1`, `2`, `3`, `1 3`, `1,3`, `13` o `todos`.
+- Pregunta aparte (sin lista): en terminal, casillas con ↑/↓ y Espacio (al menos uno); sin
+  terminal, modo texto: `1`, `2`, `3`, `1 3`, `1,3`, `13` o `todos`.
 - Un editor instalado que **no** elegiste genera una pregunta: **conservarlo** o **desinstalarlo**.
   Si eliges desinstalar, el ítem `purga-<id>` se coloca justo antes de la sección de limpieza.
 - Con `--omitir <editor>` no se toca ese editor en absoluto.
@@ -175,7 +191,7 @@ del intento:
 
 | Ítem | Motivo |
 |---|---|
-| `cursor`, `chrome`, `brave`, `appflowy`, `wallpapers` | paquete solo para `amd64` (o `.deb` inexistente para la arquitectura). |
+| `cursor`, `chrome`, `brave`, `wallpapers` | paquete solo para `amd64` (o `.deb` inexistente para la arquitectura). |
 | `wave` | no hay `.deb` para esa arquitectura. |
 | `sin-firefox` (Manjaro) | otro paquete depende de Firefox. |
 
@@ -206,7 +222,8 @@ volver a ejecutar el instalador sin instalar nada nuevo:
 | Algún ítem falló | Volver a ejecutar `./init.sh` y revisar el log. |
 | Kernel o componentes actualizados | Reiniciar el equipo. |
 | Optimizaciones USB nuevas | Reiniciar para activarlas del todo. |
-| Docker instalado y sin el grupo en la sesión | `newgrp docker` o cerrar sesión. |
+| «Docker sin sudo» aplicado y sin el grupo en la sesión | `newgrp docker` o cerrar sesión. |
+| Espanso nuevo | Probar `:espanso`; en Wayland, repetir el `setcap` tras cada actualización. |
 | Tailscale sin autorizar | `sudo tailscale up`. |
 | Git sin identidad | `git config --global user.name` / `user.email`. |
 | Node, pnpm, Bun, Rust, rutas nuevas | Abrir terminal nueva o `exec $SHELL`. |
@@ -214,7 +231,7 @@ volver a ejecutar el instalador sin instalar nada nuevo:
 | Hermes nuevo | `hermes setup`. |
 | `gh` nuevo | `gh auth login`. |
 | Playwright CLI nuevo | `playwright-cli install-browser` (en Ubuntu con `--with-deps`). |
-| Respaldo de AppFlowy | Repo público (**urgente**), inexistente, no verificable o `gh` sin sesión. |
+| herdr App nueva | Abrir **Herdr** desde el menú de aplicaciones (`herdr-app`). |
 | Flutter nuevo | `flutter doctor`. |
 | Editores, navegadores y apps nuevas | Abrirlos e iniciar sesión. |
 | Terminal configurada | Elegir la fuente MesloLGS NF y ejecutar `p10k configure`. |
@@ -253,8 +270,8 @@ Antes de borrar, el script comprueba que:
 | El node activo no es LTS | El instalador consulta la LTS vigente en `nodejs.org`; sin conexión solo exige «que sea LTS». |
 | Iconos rotos en la terminal | Falta la fuente: elige **MesloLGS NF** (Powerlevel10k) o **CascadiaCode Nerd Font**. |
 | `zsh` no es el shell por defecto tras instalarlo | Hay que cerrar sesión y volver a entrar. |
-| Docker pide `sudo` | El grupo `docker` solo se aplica en una sesión nueva: `newgrp docker`. |
-| El respaldo de AppFlowy no sube | El repositorio es público o no se puede comprobar: `appflowy-data-backup.sh --status`. |
+| Docker pide `sudo` | Marca **Docker sin sudo** (`./init.sh --solo docker-sin-sudo`); el grupo se aplica en una sesión nueva: `newgrp docker`. |
+| Espanso no expande en Wayland | Falta el permiso: `sudo setcap "cap_dac_override+p" $(which espanso)` y `espanso restart`. |
 | `/tmp` sigue en disco tras el modo USB | `tmp.mount` se activa en el próximo arranque. |
 | `zram` no aparece | Se activa al reiniciar; el instalador avisa si no pudo arrancarlo ahora. |
 
@@ -272,7 +289,4 @@ instalador y la línea de error que se muestra en el resumen.
 ./init.sh --omitir wave                            # todo menos un ítem
 ./init.sh --solo-usb                               # solo optimizaciones USB
 tail -f ~/.local/state/new-linux-conf/*.log        # seguir el registro
-
-appflowy-data-backup.sh --status                   # estado del respaldo de AppFlowy
-appflowy-data-backup.sh --backup                   # respaldar ahora
 ```

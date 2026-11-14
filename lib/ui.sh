@@ -111,18 +111,32 @@ error()   { printf '%s\n' "${RED}✘  $*${RESET}" >&2; }
 dim()     { printf '%s\n' "${DIM}$*${RESET}"; }
 
 # hr [caracter] [color(obsoleto, se ignora)] [ancho]
-# Línea horizontal con degradado naranja→azul a lo ancho de la terminal.
+# Línea horizontal con degradado naranja→azul que ocupa TODO el ancho de la terminal.
+# En truecolor cada columna tiene su propio color (degradado suave); si no, por tramos.
 hr() {
-    local ch="${1:-─}" width="${3:-}" out="" i run seg pm blanks
-    case "$width" in ''|*[!0-9]*) width="$(ui_cols)" ;; esac
+    local ch="${1:-─}" width="${3:-}" out="" i run seg pm blanks last r g b t prev="" esc
+    case "$width" in ''|*[!0-9]*) width="$(ui_real_cols)" ;; esac
     [ "$width" -lt 1 ] && width=1
     if [ "$_UI_GRAD_MODE" = none ]; then
         printf -v blanks '%*s' "$width" ''
         printf '%s\n' "${blanks// /$ch}"
         return 0
     fi
-    run=$((( width + _GRAD_N - 1) / _GRAD_N)); [ "$run" -lt 1 ] && run=1
-    local last=$(( width > 1 ? width - 1 : 1 ))
+    last=$(( width > 1 ? width - 1 : 1 ))
+    if [ "$_UI_GRAD_MODE" = tc ]; then
+        for ((i = 0; i < width; i++)); do
+            t=$(( i * 255 / last ))
+            r=$(( _G_R1 + (t * (_G_R2 - _G_R1) + 127) / 255 ))
+            g=$(( _G_G1 + (t * (_G_G2 - _G_G1) + 127) / 255 ))
+            b=$(( _G_B1 + (t * (_G_B2 - _G_B1) + 127) / 255 ))
+            esc=$'\033[38;2;'"${r};${g};${b}m"
+            [ "$esc" != "$prev" ] && out+="$esc" && prev="$esc"
+            out+="$ch"
+        done
+        printf '%s\n' "${out}${RESET}"
+        return 0
+    fi
+    run=$(( (width + _GRAD_N - 1) / _GRAD_N )); [ "$run" -lt 1 ] && run=1
     for ((i = 0; i < width; i += run)); do
         if [ $(( i + run )) -gt "$width" ]; then seg=$(( width - i )); else seg="$run"; fi
         pm=$(( i * 1000 / last )); [ "$pm" -gt 1000 ] && pm=1000
@@ -222,90 +236,151 @@ big_text() {
 }
 
 # ---------------------------------------------------------------------------
-# Banner de presentación
+# Fuente de bloques compacta (3 filas de texto = 5 filas de píxeles con medios bloques ▀▄█)
+# Cada letra: 5 filas de píxeles separadas por '|' ('#' encendido, '.' apagado).
 # ---------------------------------------------------------------------------
-# Bloque 1: «VIC DEV PRO» (fuente ANSI Shadow). Se muestra completo si cabe
-# en la terminal; si no, se usa una versión compacta con la fuente 5x5.
-readarray -t _BANNER_VIC <<'ART'
-██╗   ██╗██╗ ██████╗              ██████╗ ███████╗██╗   ██╗    ██████╗ ██████╗  ██████╗
-██║   ██║██║██╔════╝              ██╔══██╗██╔════╝██║   ██║    ██╔══██╗██╔══██╗██╔═══██╗
-██║   ██║██║██║         █████╗    ██║  ██║█████╗  ██║   ██║    ██████╔╝██████╔╝██║   ██║
-╚██╗ ██╔╝██║██║         ╚════╝    ██║  ██║██╔══╝  ╚██╗ ██╔╝    ██╔═══╝ ██╔══██╗██║   ██║
- ╚████╔╝ ██║╚██████╗              ██████╔╝███████╗ ╚████╔╝     ██║     ██║  ██║╚██████╔╝
-  ╚═══╝  ╚═╝ ╚═════╝              ╚═════╝ ╚══════╝  ╚═══╝      ╚═╝     ╚═╝  ╚═╝ ╚═════╝
-ART
+declare -A _PX=(
+    [A]='.#.|#.#|###|#.#|#.#'     [B]='##.|#.#|##.|#.#|##.'     [C]='.##|#..|#..|#..|.##'
+    [D]='##.|#.#|#.#|#.#|##.'     [E]='###|#..|##.|#..|###'     [F]='###|#..|##.|#..|#..'
+    [G]='.##|#..|#.#|#.#|.##'     [H]='#.#|#.#|###|#.#|#.#'     [I]='###|.#.|.#.|.#.|###'
+    [J]='..#|..#|..#|#.#|.#.'     [K]='#.#|#.#|##.|#.#|#.#'     [L]='#..|#..|#..|#..|###'
+    [M]='#...#|##.##|#.#.#|#...#|#...#'                         [N]='#..#|##.#|#.##|#..#|#..#'
+    [O]='.#.|#.#|#.#|#.#|.#.'     [P]='##.|#.#|##.|#..|#..'     [Q]='.#.|#.#|#.#|##.|.##'
+    [R]='##.|#.#|##.|#.#|#.#'     [S]='.##|#..|.#.|..#|##.'     [T]='###|.#.|.#.|.#.|.#.'
+    [U]='#.#|#.#|#.#|#.#|###'     [V]='#.#|#.#|#.#|#.#|.#.'     [W]='#...#|#...#|#.#.#|##.##|#...#'
+    [X]='#.#|#.#|.#.|#.#|#.#'     [Y]='#.#|#.#|.#.|.#.|.#.'     [Z]='###|..#|.#.|#..|###'
+    ['-']='...|...|###|...|...'   [' ']='..|..|..|..|..'          ['.']='.|.|.|.|#'
+)
 
-# Bloque 2: «linux conf» (fuente 3D) con degradado vertical truecolor.
-readarray -t _BANNER_CONF <<'ART'
-___                                ____                    __  _
-  / (_)__  __ ____ __  _______  ___  / _(_)__ ___ _________ _/ /_(_)__  ___
- / / / _ \/ // /\ \ / / __/ _ \/ _ \/ _/ / _ `/ // / __/ _ `/ __/ / _ \/ _ \
-/_/_/_//_/\_,_//_\_\  \__/\___/_//_/_//_/\_, /\_,_/_/  \_,_/\__/_/\___/_//_/
-                                        /___/
-                                        __
-                          ___ __ _____ / /____ __ _
-                         (_-</ // (_-</ __/ -_)  ' \
-                        /___/\_, /___/\__/\__/_/_/_/
-                            /___/
-ART
-
-# Degradado del banner: 16 filas (6 de VIC + 10 de linux conf) repartidas
-# a lo largo del degradado naranja→azul, de arriba abajo.
-_banner_row_pm() {  # <fila 0..15> → permil del degradado
-    printf '%s' "$(( $1 * 1000 / 15 ))"
+# _px_rows "TEXTO" → _ROWS (3 filas) y _ROWS_W (ancho)
+_px_rows() {
+    local t i ch c r top bot line
+    local -a px=("" "" "" "" "") seg
+    t="$(_ascii_upper "$1")"
+    for ((i = 0; i < ${#t}; i++)); do
+        ch="${t:i:1}"
+        IFS='|' read -ra seg <<< "${_PX[$ch]:-${_PX[' ']}}"
+        for r in 0 1 2 3 4; do px[r]+="${seg[r]}"; [ "$i" -lt $(( ${#t} - 1 )) ] && px[r]+="."; done
+    done
+    _ROWS=()
+    for r in 0 2 4; do
+        line=""
+        for ((c = 0; c < ${#px[0]}; c++)); do
+            top="${px[r]:c:1}"; bot="."; [ "$r" -lt 4 ] && bot="${px[r+1]:c:1}"
+            case "$top$bot" in '##') line+='█' ;; '#.') line+='▀' ;; '.#') line+='▄' ;; *) line+=' ' ;; esac
+        done
+        _ROWS+=("$line")
+    done
+    _ROWS_W="${#px[0]}"
 }
 
-_banner_art_width() {
-    local line w=0
-    for line in "${_BANNER_VIC[@]}" "${_BANNER_CONF[@]}"; do
-        [ "${#line}" -gt "$w" ] && w="${#line}"
+# _shadow_rows "TEXTO" → _ROWS (6 filas, fuente ANSI Shadow) y _ROWS_W
+_shadow_rows() {
+    local t i r ch g w=0
+    local -a seg
+    _ROWS=("" "" "" "" "" "")
+    t="$(_ascii_upper "$1")"
+    for ((i = 0; i < ${#t}; i++)); do
+        ch="${t:i:1}"; g="${_GLYPH[$ch]:-${_GLYPH[' ']}}"
+        IFS='|' read -ra seg <<< "$g"
+        for r in 0 1 2 3 4 5; do _ROWS[r]+="${seg[r]//./ } "; done
     done
-    printf '%s' "$w"
+    for r in 0 1 2 3 4 5; do [ "${#_ROWS[r]}" -gt "$w" ] && w="${#_ROWS[r]}"; done
+    _ROWS_W="$w"
 }
 
-banner_vic_art() {
-    local i line pm
-    for i in "${!_BANNER_VIC[@]}"; do
-        pm="$(_banner_row_pm "$i")"
-        line="${_BANNER_VIC[i]}"
-        printf '%s\n' "  $(_grad_at "$pm")${line}${RESET}"
-    done
+_font_width() {   # _font_width <shadow|px> "TEXTO"
+    if [ "$1" = shadow ]; then _shadow_rows "$2"; else _px_rows "$2"; fi
+    printf '%s' "$_ROWS_W"
 }
 
-banner_conf_art() {
-    local i line pm
-    for i in "${!_BANNER_CONF[@]}"; do
-        pm="$(_banner_row_pm $(( i + 6 )))"
-        line="${_BANNER_CONF[i]}"
-        printf '%s\n' "  $(_grad_at "$pm")${line}${RESET}"
+# _banner_block "TEXTO" <ancho> <máx. líneas shadow> <máx. líneas px>
+# Elige la fuente MÁS GRANDE en la que el texto cabe (partiendo por palabras) y añade las filas
+# resultantes a _BANNER (cada bloque separado por "\x1f<ancho>" para centrarlo como unidad).
+_banner_block() {
+    local text="$1" avail="$2" font max word cur lines n w ok
+    local -a parts
+    for font in shadow px; do
+        [ "$font" = shadow ] && max="$3" || max="$4"
+        [ "$max" -gt 0 ] || continue
+        parts=(); cur=""; ok=1
+        for word in $text; do
+            if [ -n "$cur" ] && [ "$(_font_width "$font" "$cur $word")" -le "$avail" ]; then
+                cur="$cur $word"
+            else
+                [ -n "$cur" ] && parts+=("$cur")
+                cur="$word"
+                [ "$(_font_width "$font" "$cur")" -le "$avail" ] || { ok=0; break; }
+            fi
+        done
+        [ -n "$cur" ] && parts+=("$cur")
+        [ "$ok" = 1 ] && [ "${#parts[@]}" -le "$max" ] || continue
+        for n in "${!parts[@]}"; do
+            if [ "$font" = shadow ]; then _shadow_rows "${parts[n]}"; else _px_rows "${parts[n]}"; fi
+            _BANNER+=($'\x1f'"$_ROWS_W" "${_ROWS[@]}")
+        done
+        return 0
     done
+    # Ninguna fuente cabe: texto en negrita (se marca con \x1e)
+    _BANNER+=($'\x1f0' $'\x1e'"$text")
+}
+
+# _center <ancho-del-contenido> → espacios para centrarlo en la terminal
+_center() {
+    local cols pad
+    cols="$(ui_real_cols)"
+    pad=$(( (cols - $1) / 2 )); [ "$pad" -lt 0 ] && pad=0
+    printf '%*s' "$pad" ''
+}
+
+# Imprime una línea de texto con códigos de color, centrada según su texto visible
+_center_line() {
+    local plain
+    plain="$(sed 's/\x1b\[[0-9;]*m//g' <<< "$1")"
+    printf '%s%s\n' "$(_center "${#plain}")" "$1"
 }
 
 show_banner() {
     [ -t 1 ] && [ "${DRY_RUN:-0}" != 1 ] && command -v clear >/dev/null 2>&1 && clear 2>/dev/null || true
-    local cols art_w width
+    local cols avail total=0 i n=0 pm row bw=0 pad=""
     cols="$(ui_real_cols)"
-    art_w="$(( $(_banner_art_width) + 2 ))"
-    if [ "$cols" -ge "$art_w" ]; then
-        width="$art_w"
+    avail=$(( cols - 4 ))
+
+    # 1) Componer: «VIC-DEV PRO» (máx. 1 línea) y «LINUX CONFIGURATION SYSTEM» (fuente compacta
+    #    hasta 3 líneas, o grande si cabe en 2). Cada parte usa la fuente más grande que quepa.
+    _BANNER=()
+    _banner_block "VIC-DEV PRO" "$avail" 1 2
+    _BANNER+=($'\x1f0' "")
+    _banner_block "LINUX CONFIGURATION SYSTEM" "$avail" 2 3
+
+    for row in "${_BANNER[@]}"; do [[ "$row" == $'\x1f'* ]] || total=$((total + 1)); done
+    [ "$total" -lt 2 ] && total=2
+
+    # 2) Pintar centrado, con degradado vertical naranja→azul
+    echo
+    for row in "${_BANNER[@]}"; do
+        if [[ "$row" == $'\x1f'* ]]; then bw="${row#?}"; pad="$(_center "$bw")"; continue; fi
+        pm=$(( n * 1000 / (total - 1) )); n=$((n + 1))
+        if [[ "$row" == $'\x1e'* ]]; then
+            _center_line "${BOLD}$(_grad_at "$pm")${row#?}${RESET}"
+        elif [ -z "$row" ]; then
+            echo
+        else
+            printf '%s%s\n' "$pad" "$(_grad_at "$pm")${row}${RESET}"
+        fi
+    done
+    echo
+    _center_line "${BOLD}${WHITE}Instalador y configurador automático de Linux${RESET}"
+    if [ "$cols" -ge 76 ]; then
+        _center_line "${BOLD}${CYAN}Ubuntu (linux conf)  ·  Manjaro (manjaro conf)${RESET}  ${DIM}— Escritorio o USB${RESET}"
     else
-        width="$(ui_cols)"
+        _center_line "${BOLD}${CYAN}Ubuntu (linux conf)${RESET}"
+        _center_line "${BOLD}${CYAN}Manjaro (manjaro conf)${RESET}"
+        _center_line "${DIM}Escritorio o USB${RESET}"
     fi
+    _center_line "${DIM}Por Victor Carrillo${RESET}"
     echo
-    if [ "$cols" -ge "$art_w" ]; then
-        banner_vic_art
-        echo
-        banner_conf_art
-    else
-        big_text "VIC"
-        printf '%s\n' "  ${BOLD}${WHITE}LINUX CONF${RESET}"
-    fi
-    echo
-    printf '%s\n' "  ${BOLD}${WHITE}Instalador y configurador automático de Linux${RESET}"
-    printf '%s\n' "  ${BOLD}${CYAN}Ubuntu (linux conf)  ·  Manjaro (manjaro conf)${RESET}   ${BOLD}${DIM}— Escritorio o USB${RESET}"
-    printf '%s\n' "  ${DIM}Por Victor Carrillo${RESET}"
-    echo
-    hr '█' "$MAGENTA" "$width"
+    hr '█'
     echo
 }
 

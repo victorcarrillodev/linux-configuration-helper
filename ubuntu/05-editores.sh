@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # ubuntu/05-editores.sh — Visual Studio Code y Antigravity (repositorios oficiales).
-# El usuario elige en el PASO 3 del menú entre Antigravity, Cursor y VS Code (uno o varios);
-# aquí se definen los ítems, el motor del instalador filtra los que no se eligieron.
+# Se eligen en la lista principal (PASO 3) junto al resto de programas.
 
-section 05 "EDITORES" "Editores elegidos en el menú: Antigravity IDE, Cursor y VS Code"
+section 05 "EDITORES E IDES" "Antigravity IDE, Cursor y VS Code (elige uno, varios o ninguno)"
 
 # --- Visual Studio Code ---
 v_vscode() { has_cmd code && pkg_installed code; }
@@ -63,3 +62,4 @@ i_cursor() {
 }
 register_item cursor "Cursor" v_cursor i_cursor utilidades-base
 set_editor_packages cursor cursor
+describe_editors

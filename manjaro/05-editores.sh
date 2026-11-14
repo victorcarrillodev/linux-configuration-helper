@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # manjaro/05-editores.sh — Cursor y Antigravity IDE (AUR) y VS Code (repositorio).
-# El usuario elige en el PASO 3 del menú entre Antigravity, Cursor y VS Code (uno o varios);
-# aquí se definen los ítems, el motor del instalador filtra los que no se eligieron.
+# Se eligen en la lista principal (PASO 3) junto al resto de programas.
 
-section 05 "EDITORES" "Editores elegidos en el menú: Antigravity IDE, Cursor y VS Code"
+section 05 "EDITORES E IDES" "Antigravity IDE, Cursor y VS Code (elige uno, varios o ninguno)"
 
 # --- Cursor (AUR) ---
 register_aur cursor "Cursor IDE" cursor cursor-bin
@@ -17,3 +16,4 @@ set_editor_packages antigravity antigravity-ide
 # Se instala con yay (depende del módulo 01) y se verifica con el comando «code».
 register_aur vscode "Visual Studio Code" code visual-studio-code-bin
 set_editor_packages vscode visual-studio-code-bin
+describe_editors

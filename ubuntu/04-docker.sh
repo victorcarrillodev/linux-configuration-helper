@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# ubuntu/04-docker.sh — Docker CE desde el repositorio oficial, Compose, Buildx y grupo docker.
+# ubuntu/04-docker.sh — Docker CE desde el repositorio oficial, Compose, Buildx y uso sin sudo.
 
-section 04 "DOCKER" "Docker CE, CLI, Compose, Buildx y grupo docker"
+section 04 "DOCKER" "Docker CE, CLI, Compose, Buildx y uso sin sudo"
 
 v_docker() {
     pkg_installed docker-ce && cmd_works docker --version && docker compose version >/dev/null 2>&1 \
-        && user_in_group_file docker && service_enabled docker
+        && service_enabled docker
 }
 
 i_docker() {
@@ -40,7 +40,10 @@ EOF
 
     pkg_refresh
     pkg_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    sudo usermod -aG docker "$USER"
     sudo systemctl enable --now docker
 }
 register_item docker "Docker CE + Compose + Buildx" v_docker i_docker utilidades-base
+
+# Uso sin sudo: ítem aparte para poder elegirlo (funciones en comun/)
+register_item docker-sin-sudo "Docker sin sudo (grupo docker)" v_docker_sin_sudo i_docker_sin_sudo docker
+describe_docker

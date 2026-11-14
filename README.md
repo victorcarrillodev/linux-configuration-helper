@@ -38,9 +38,16 @@ cd linux-configuration-helper
 ./init.sh
 ```
 
-1. **PASO 1 · Sistema** — Ubuntu o Manjaro. Detecta el actual y lo propone.
+1. **PASO 1 · Sistema** — `1` Manjaro o `2` Ubuntu. Detecta el actual y lo propone.
 2. **PASO 2 · Destino** — Escritorio (disco interno) o USB (sistema portable).
-3. **PASO 3 · Editores** — Antigravity IDE, Cursor y/o VS Code (al menos uno).
+3. **PASO 3 · Qué instalar** — una sola lista con casillas de todos los programas, editores e IDEs,
+   recursos y configuraciones, agrupados por secciones de colores, indicando lo que ya está
+   instalado y con una descripción de cada uno.
+
+En las listas: **↑/↓** (o `j`/`k`) para moverte, **Espacio** para marcar/desmarcar (sobre una
+sección marca o desmarca toda la sección), `a` todo, `n` nada, **Enter** confirma y `q` sale.
+Las dependencias se respetan solas: marcar `pnpm` marca Node.js si falta, y desmarcar algo que no
+está instalado desmarca lo que depende de ello.
 
 Después verás una **auditoría** de la lista con lo que ya está instalado y lo que falta, y una
 confirmación. A partir de ahí no hay que tocar nada: al terminar obtendrás un **resumen verificado**
@@ -68,20 +75,21 @@ y la lista de **pasos manuales** que te corresponden.
 
 ```
 init.sh                     Punto de entrada único: opciones, menús y flujo
-appflowy-data-backup.sh     Respaldo/restauración de AppFlowy en GitHub + daemon semanal
+claude/                     Status line de Claude Code (statusline.py) y su activador en settings.json
 lib/                        Motor
   ui.sh                     Banner, títulos, mensajes, pausa entre instalaciones
   menu.sh                   Preguntas: sistema, destino, editores, confirmaciones
+  checklist.sh              Lista interactiva con casillas (↑/↓, Espacio, Enter)
   core.sh                   Catálogo de ítems, verificación, reintentos, resumen, borrado
   checks.sh                 Comprobaciones de solo lectura, red y descargas
   shellrc.sh                Edición idempotente de ~/.profile, ~/.bashrc y ~/.zshrc
 comun/                      Módulos compartidos por ambas distros
   00-modo-usb.sh            USB: optimizaciones · Escritorio: las revierte
-  10-herramientas-comunes.sh Instaladores idénticos en las dos distros (herdr, respaldo de AppFlowy)
+  10-herramientas-comunes.sh Instaladores idénticos en las dos distros (herdr CLI y App) y descripciones
   99-pasos-manuales.sh      Calcula los pasos que debe hacer el usuario al final
 ubuntu/                     «linux conf» (apt, snap, repositorios externos)
   distro.sh                 Adaptador de paquetes (apt)
-  01-sistema … 09-limpieza
+  01-sistema … 08-limpieza
 manjaro/                    «manjaro conf» (pacman + AUR con yay)
   distro.sh                 Adaptador de paquetes (pacman/yay)
   01-sistema … 08-limpieza
@@ -99,6 +107,7 @@ manjaro/                    «manjaro conf» (pacman + AUR con yay)
 | `--listar` | Muestra módulos e ítems de la distro elegida. |
 | `--simular` | Muestra el plan sin instalar nada. |
 | `--sin-pausa` | Quita la pausa de 2 s tras cada instalación. |
+| `--sin-lista` | No muestra la lista del PASO 3: instala todo el catálogo (los editores se preguntan aparte). |
 | `--yes`, `-y` | Acepta las respuestas por defecto (editores: los tres; nunca borra el instalador). |
 | `--ayuda`, `-h` | Ayuda completa. |
 
@@ -115,21 +124,6 @@ El **modo USB** aplica optimizaciones para reducir escrituras y mejorar la respu
 portable: `sysctl` de memoria, logs en RAM, planificador BFQ, `zram`, `noatime`, `/tmp` en RAM y
 `profile-sync-daemon`. El **modo Escritorio** revierte esas configuraciones si venían de una
 instalación anterior. El detalle está en [INSTALACIONES.md](INSTALACIONES.md#4-acciones-sobre-el-sistema).
-
-## Respaldo semanal de AppFlowy
-
-`appflowy-data-backup.sh` respalda tus notas de AppFlowy en un repositorio **privado** de GitHub,
-funciona como servicio de usuario y tiene un menú para respaldar, restaurar o ver el estado.
-`init.sh` lo instala y lo activa en ambas distros.
-
-```bash
-appflowy-data-backup.sh           # menú interactivo
-appflowy-data-backup.sh --status  # repo, visibilidad, daemon, último respaldo
-```
-
-> El repositorio **debe ser privado**: antes de cada subida el script comprueba la visibilidad y se
-> niega a subir si es público o si no puede comprobarlo. Advertencias completas en
-> [INSTALACIONES.md](INSTALACIONES.md#8-respaldo-semanal-de-appflowy-a-github).
 
 ## Añadir un programa
 
@@ -159,4 +153,3 @@ register_item mi-app "Mi App" v_mi_app i_mi_app [dependencia…]
 - No se ejecuta como root ni con `sudo ./init.sh`.
 - Las claves y repositorios externos se verifican por firma (`signed-by`) antes de añadirlos.
 - El borrado del instalador exige confirmación explícita y comprueba la ruta y el estado de git.
-- El respaldo de AppFlowy nunca sube a un repositorio público.

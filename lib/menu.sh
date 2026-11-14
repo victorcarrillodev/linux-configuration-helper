@@ -100,7 +100,7 @@ choose_distro() {
     detected="$(detect_distro)"
     if [ -n "$DISTRO_ID" ]; then return 0; fi   # ya viene por --sistema
 
-    case "$detected" in ubuntu) def=1 ;; manjaro) def=2 ;; esac
+    case "$detected" in manjaro) def=1 ;; ubuntu) def=2 ;; esac
     if [ -n "$detected" ]; then
         label="$(distro_label "$detected")"
         hint="${DIM}(se detectó ${label}; Enter = ${def})${RESET}"
@@ -108,12 +108,12 @@ choose_distro() {
 
     printf '%s\n' "${BOLD}${WHITE}  PASO 1 · ¿Para qué sistema es esta configuración?${RESET}"
     echo
-    printf '%s\n' "     ${CYAN}1)${RESET} Ubuntu    ${DIM}— linux conf   · apt, snap y repositorios externos${RESET}"
-    printf '%s\n' "     ${CYAN}2)${RESET} Manjaro   ${DIM}— manjaro conf · pacman y AUR (yay)${RESET}"
+    printf '%s\n' "     ${CYAN}1)${RESET} Manjaro   ${DIM}— manjaro conf · pacman y AUR (yay)${RESET}"
+    printf '%s\n' "     ${CYAN}2)${RESET} Ubuntu    ${DIM}— linux conf   · apt, snap y repositorios externos${RESET}"
     echo
     [ -n "$hint" ] && printf '     %s\n' "$hint"
     ask_choice "  Elige [1-2]:" "$def" 2
-    case "$CHOICE" in 1) DISTRO_ID=ubuntu ;; 2) DISTRO_ID=manjaro ;; esac
+    case "$CHOICE" in 1) DISTRO_ID=manjaro ;; 2) DISTRO_ID=ubuntu ;; esac
     success "Sistema: $(distro_label "$DISTRO_ID")"
     echo
 }
@@ -173,6 +173,29 @@ choose_editors() {
         return 0
     fi
 
+    # Terminal interactiva: lista con casillas (↑/↓ y Espacio)
+    if cl_interactive; then
+        local e
+        cl_reset
+        for e in antigravity cursor vscode; do
+            # Se premarcan los que ya están instalados
+            if editor_installed "$e"; then
+                cl_add_item "$e" "$(editor_pretty "$e")" 1 "$(_editor_desc "$e") · ya instalado"
+            else
+                cl_add_item "$e" "$(editor_pretty "$e")" 0 "$(_editor_desc "$e")"
+            fi
+        done
+        if ! checklist "PASO 3 · ¿Qué editores de código quieres instalar?" \
+                       "Marca uno o varios con Espacio y confirma con Enter (al menos uno)." 1; then
+            info "Cancelado. No se ha modificado nada."
+            exit 0
+        fi
+        EDITORS_SELECTED="$(cl_selected)"
+        success "Editores elegidos: $(editors_pretty_list $EDITORS_SELECTED)"
+        echo
+        return 0
+    fi
+
     printf '%s\n' "${BOLD}${WHITE}  PASO 3 · ¿Qué editores de código quieres instalar?${RESET}"
     echo
     printf '%s\n' "     ${CYAN}1)${RESET} Antigravity IDE  ${DIM}— IDE con IA de Google${RESET}"
@@ -197,6 +220,119 @@ choose_editors() {
         warn "Opción no válida. Escribe números del 1 al 3 (p. ej. 1 3), o «todos»."
     done
     success "Editores elegidos: $(editors_pretty_list $EDITORS_SELECTED)"
+    echo
+}
+
+_editor_desc() {
+    case "$1" in
+        antigravity) printf 'IDE con IA de Google' ;;
+        cursor)      printf 'editor con IA (basado en VS Code)' ;;
+        vscode)      printf 'Visual Studio Code de Microsoft' ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# PASO 3 · Elegir qué programas, editores, recursos y configuraciones entran al plan
+# ---------------------------------------------------------------------------
+SKIP_ITEM_LIST="${SKIP_ITEM_LIST:-0}"   # --sin-lista: instala todo sin preguntar
+
+# Gancho de la lista: mantiene coherentes las dependencias mientras se marca/desmarca.
+#  · Marcar un ítem marca también lo que necesita (si aún no está instalado).
+#  · Desmarcar algo NO instalado desmarca lo que depende de ello (no podría instalarse).
+_plan_dep_hook() {
+    local i="$1" val="$2" id="${CL_KEYS[$1]}" d j k
+    if [ "$val" = 1 ]; then
+        for d in ${ITEM_DEPS[$id]:-}; do
+            j="${CL_INDEX[$d]:-}"
+            [ -n "$j" ] && [ "${CL_ON[$j]}" = 0 ] || continue
+            [ "${ITEM_PRE[$d]:-}" = installed ] && continue
+            cl_set "$j" 1
+            CL_MSG="También se marcó «${CL_TEXT[$j]}»: lo necesita «${CL_TEXT[$i]}»."
+        done
+    else
+        [ "${ITEM_PRE[$id]:-}" = installed ] && return 0
+        for k in "${!CL_KEYS[@]}"; do
+            [ "${CL_HDR[$k]}" = 0 ] && [ "${CL_ON[$k]}" = 1 ] || continue
+            case " ${ITEM_DEPS[${CL_KEYS[$k]}]:-} " in
+                *" $id "*)
+                    cl_set "$k" 0
+                    CL_MSG="También se desmarcó «${CL_TEXT[$k]}»: depende de «${CL_TEXT[$i]}»." ;;
+            esac
+        done
+    fi
+}
+
+# ¿Se mostrará la lista de casillas? (no con --yes, --sin-lista, --solo ni sin terminal)
+item_list_enabled() {
+    [ "${ASSUME_YES:-0}" = 1 ] && return 1
+    [ "$SKIP_ITEM_LIST" = 1 ] && return 1
+    [ "${#ONLY[@]}" -gt 0 ] && return 1     # con --solo ya se eligió qué ejecutar
+    cl_interactive
+}
+
+# Muestra ACTIVE_IDS (editores incluidos) como lista de casillas y deja en ACTIVE_IDS solo lo
+# marcado, en el orden original del catálogo. Los editores marcados pasan a EDITORS_SELECTED.
+choose_items() {
+    local id sec cur="" rc pending=() d changed e
+    local -A keep=()
+
+    item_list_enabled || return 0
+
+    info "Comprobando qué ya está instalado…"
+    refresh_env
+    cl_reset
+    for id in "${ACTIVE_IDS[@]}"; do
+        sec="${ITEM_SECTION[$id]}"
+        if [ "$sec" != "$cur" ]; then
+            cl_add_header "${sec} · ${SECTION_NAME[$sec]}" "${SECTION_DESC[$sec]}"
+            cur="$sec"
+        fi
+        run_verify "$id"; rc=$?
+        case "$rc" in
+            0) ITEM_PRE[$id]=installed; cl_add_item "$id" "${ITEM_LABEL[$id]}" 1 "✔ ya instalado" "${ITEM_DESC[$id]:-}" ;;
+            1) ITEM_PRE[$id]=pending;   cl_add_item "$id" "${ITEM_LABEL[$id]}" 1 "" "${ITEM_DESC[$id]:-}" ;;
+            *) ITEM_PRE[$id]=task;      cl_add_item "$id" "${ITEM_LABEL[$id]}" 1 "tarea" "${ITEM_DESC[$id]:-}" ;;
+        esac
+    done
+    [ "${#CL_KEYS[@]}" -gt 0 ] || return 0
+
+    CL_HOOK=_plan_dep_hook
+    if ! checklist "PASO 3 · ¿Qué quieres instalar y configurar?" \
+                   "Espacio marca/desmarca (en una sección, toda la sección). Enter confirma." 0; then
+        CL_HOOK=""
+        info "Cancelado. No se ha modificado nada."
+        exit 0
+    fi
+    CL_HOOK=""
+
+    for id in $(cl_selected); do keep[$id]=1; done
+
+    # Dependencias de lo elegido (p. ej. yay para los editores) que falten y no estén instaladas
+    changed=1
+    while [ "$changed" = 1 ]; do
+        changed=0
+        for id in "${!keep[@]}"; do
+            for d in ${ITEM_DEPS[$id]:-}; do
+                [ -n "${keep[$d]:-}" ] && continue
+                [ -n "${CL_INDEX[$d]:-}" ] || continue          # no estaba en el plan
+                [ "${ITEM_PRE[$d]:-}" = installed ] && continue
+                keep[$d]=1; changed=1
+                warn "Se añade «${ITEM_LABEL[$d]}»: lo necesita «${ITEM_LABEL[$id]}»."
+            done
+        done
+    done
+
+    local before="${#ACTIVE_IDS[@]}"
+    for id in "${ACTIVE_IDS[@]}"; do [ -n "${keep[$id]:-}" ] && pending+=("$id"); done
+    ACTIVE_IDS=("${pending[@]}")
+
+    # Editores elegidos en la lista (los no marcados que estén instalados se preguntan después)
+    EDITORS_SELECTED=""
+    for e in "${EDITOR_ITEMS[@]}"; do [ -n "${keep[$e]:-}" ] && EDITORS_SELECTED+="${EDITORS_SELECTED:+ }$e"; done
+    if [ -n "$EDITORS_SELECTED" ]; then
+        success "Editores elegidos: $(editors_pretty_list $EDITORS_SELECTED)"
+    fi
+    success "Plan: ${#ACTIVE_IDS[@]} de ${before} ítems elegidos."
     echo
 }
 

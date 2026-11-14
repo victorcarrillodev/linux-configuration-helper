@@ -1,25 +1,21 @@
 #!/usr/bin/env bash
-# ubuntu/08-productividad.sh — AppFlowy (paquete .deb oficial de GitHub).
+# ubuntu/08-productividad.sh — Espanso (expansor de texto, .deb oficial de GitHub).
 
-section 08 "PRODUCTIVIDAD" "AppFlowy y su respaldo semanal a GitHub"
+section 08 "PRODUCTIVIDAD" "Espanso (expansor de texto)"
 
-# dpkg registra el paquete en minúsculas ("appflowy") y deja el ejecutable en /usr/lib/AppFlowy
-v_appflowy() { pkg_installed appflowy && [ -x /usr/lib/AppFlowy/AppFlowy ]; }
-i_appflowy() {
-    if [ "$(dpkg --print-architecture)" != "amd64" ]; then
-        warn "AppFlowy solo publica .deb para amd64 (este equipo es $(dpkg --print-architecture))."
+# .deb oficial de la última versión, variante Wayland o X11 según la sesión (solo amd64)
+i_espanso() {
+    local flavor dir
+    flavor="$(espanso_flavor)"
+    if [ "$(dpkg --print-architecture)" != amd64 ]; then
+        warn "Espanso solo publica .deb para amd64 (este equipo es $(dpkg --print-architecture))."
         return "$RC_SKIP"
     fi
-    local dir url
     dir="$(mktemp -d)"; chmod 755 "$dir"; trap 'rm -rf "$dir"' EXIT
-    download https://api.github.com/repos/AppFlowy-IO/AppFlowy/releases/latest "${dir}/release.json"
-    url="$(grep -m1 -oE 'https://[^"]*AppFlowy-[0-9.]+-linux-x86_64\.deb' "${dir}/release.json" || true)"
-    if [ -z "$url" ]; then
-        error "No se encontró el .deb de AppFlowy en la última versión publicada."
-        return 1
-    fi
-    download "$url" "${dir}/appflowy.deb"
-    pkg_install "${dir}/appflowy.deb"
+    info "Sesión ${flavor}: se instala espanso-debian-${flavor}."
+    download "https://github.com/espanso/espanso/releases/latest/download/espanso-debian-${flavor}-amd64.deb" "${dir}/espanso.deb"
+    pkg_install "${dir}/espanso.deb"
+    espanso_setup
 }
-register_item appflowy "AppFlowy" v_appflowy i_appflowy utilidades-base
-register_item appflowy-backup "Respaldo semanal de AppFlowy a GitHub (daemon)" v_appflowy_backup i_appflowy_backup utilidades-base
+register_item espanso "Espanso (expansor de texto)" v_espanso i_espanso utilidades-base
+describe_espanso

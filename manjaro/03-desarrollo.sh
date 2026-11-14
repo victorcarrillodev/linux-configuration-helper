@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #!/usr/bin/env bash
-# manjaro/03-desarrollo.sh — Node.js LTS, pnpm, Bun, Rust, Flutter, rutas globales de JS y Tailscale.
+# manjaro/03-desarrollo.sh — Node.js LTS, pnpm, Bun, Rust, Flutter, rutas globales de JS, Tailscale,
+#                            Neovim, lazygit y Yazi.
 
-section 03 "DESARROLLO" "Node.js LTS, pnpm, Bun, Rust, Flutter, GitHub CLI, Playwright, herdr y Tailscale"
+section 03 "DESARROLLO" "Node.js LTS, pnpm, Bun, Rust, Flutter, GitHub CLI, Playwright, herdr (CLI/App), Tailscale, Neovim, lazygit y Yazi"
 
 # --- Node.js LTS (repo de Manjaro) ---
 # El repo trae «nodejs» (versión Current) y «nodejs-lts» (LTS). Si hay un nodejs no-LTS, se
@@ -70,7 +71,17 @@ register_item tailscale "Tailscale (VPN)" v_tailscale i_tailscale
 # --- GitHub CLI (repositorio oficial de Arch/Manjaro) ---
 register_pkg gh "GitHub CLI (gh)" repo "gh!" github-cli
 
-# --- Playwright CLI (comando: playwright-cli) y herdr: iguales en Ubuntu y Manjaro ---
+# --- Playwright CLI (comando: playwright-cli) y herdr (CLI y/o App): iguales en Ubuntu y Manjaro ---
 # El prefijo global de npm lo deja listo entorno-js (sin sudo), por eso depende de él.
 register_npm playwright-cli "Playwright CLI" playwright-cli "@playwright/cli@latest" entorno-js
-register_item herdr "herdr (multiplexor de agentes de IA)" v_herdr i_herdr
+register_item herdr     "herdr CLI (terminal)"                v_herdr     i_herdr
+register_item herdr-app "herdr App (escritorio)"              v_herdr_app i_herdr_app
+describe_herdr
+
+# --- Herramientas de terminal (repositorio extra de Arch/Manjaro) ---
+# ripgrep y fd: búsqueda rápida que usan los plugins de Neovim (Telescope) y Yazi.
+# fzf, zoxide, jq y poppler: búsqueda difusa, saltos de carpeta y vistas previas JSON/PDF en Yazi.
+register_pkg neovim  "Neovim (editor en terminal)"           repo "nvim!"    neovim ripgrep fd
+register_pkg lazygit "lazygit (Git visual en terminal)"      repo "lazygit!" lazygit
+register_pkg yazi    "Yazi (gestor de archivos en terminal)" repo "yazi!"    yazi fd ripgrep fzf zoxide jq poppler
+describe_terminal_tools

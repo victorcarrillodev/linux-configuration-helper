@@ -28,6 +28,7 @@ POST_HOOKS=()
 declare -A ITEM_LABEL ITEM_VERIFY ITEM_INSTALL ITEM_SECTION ITEM_DEPS
 declare -A ITEM_STATUS ITEM_NOTE ITEM_INDEX ITEM_PRE
 declare -A SECTION_NAME SECTION_DESC
+declare -A ITEM_DESC          # id → qué hace / para qué sirve (se muestra en la lista del PASO 3)
 declare -A PKG_SRC PKG_CMD PKG_LIST NPM_PKG NPM_CMD
 
 # --- Editores -----------------------------------------------------------------
@@ -123,6 +124,9 @@ register_item() {
     ITEM_SECTION[$id]="$CURRENT_SECTION"
     ITEM_DEPS[$id]="$*"
 }
+
+# describe <id> "<texto>" — descripción de un ítem: qué es y para qué sirve
+describe() { ITEM_DESC[$1]="$2"; }
 
 # register_pkg <id> "<etiqueta>" <repo|aur> <comando|""> <paquete…>
 # Ítem genérico de paquete. Si hay comando, se verifica con él ("cmd!" = además ejecuta --version).

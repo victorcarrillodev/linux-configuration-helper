@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# ubuntu/03-desarrollo.sh — NVM + Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Hermes y Tailscale.
+# ubuntu/03-desarrollo.sh — NVM + Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Claude Desktop,
+#                           Hermes, herdr y Tailscale.
 
-section 03 "DESARROLLO" "NVM, Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA y Tailscale"
+section 03 "DESARROLLO" "NVM, Node LTS, pnpm, Bun, PostgreSQL, Flutter, CLIs de IA, Claude Desktop, herdr (CLI/App) y Tailscale"
 
 NVM_VERSION="v0.40.3"
 
@@ -64,9 +65,39 @@ register_item flutter "Flutter SDK (snap) + dependencias" v_flutter i_flutter
 
 # --- CLIs de IA ---
 register_npm gemini-cli  "Gemini CLI (Google)"      gemini   "@google/gemini-cli"     nvm-node
-register_npm claude-code "Claude Code (Anthropic)"  claude   "@anthropic-ai/claude-code" nvm-node
+register_npm claude-code "Claude Code CLI (terminal)" claude "@anthropic-ai/claude-code" nvm-node
 register_npm codex       "Codex CLI (OpenAI)"       codex    "@openai/codex"          nvm-node
 register_npm opencode    "OpenCode"                 opencode "opencode-ai"            nvm-node
+
+# --- Claude Desktop (app oficial de Anthropic para Ubuntu 22.04+, beta, amd64/arm64) ---
+# Repositorio apt oficial: las actualizaciones llegan con «apt upgrade». Antes de confiar en la
+# clave se comprueba que su huella sea la que publica Anthropic.
+CLAUDE_DESKTOP_KEY=/usr/share/keyrings/claude-desktop-archive-keyring.asc
+CLAUDE_DESKTOP_FPR=31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
+v_claude_desktop() { pkg_installed claude-desktop && has_cmd claude-desktop; }
+i_claude_desktop() {
+    local arch tmp fpr
+    arch="$(dpkg --print-architecture)"
+    case "$arch" in amd64|arm64) ;; *) warn "Claude Desktop solo existe para amd64 y arm64 (este equipo: ${arch})."; return "$RC_SKIP" ;; esac
+    tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT
+    download https://downloads.claude.ai/claude-desktop/key.asc "$tmp"
+    fpr="$(gpg --show-keys --with-colons "$tmp" 2>/dev/null | awk -F: '$1 == "fpr" { print $10 }')"
+    if [ "$fpr" != "$CLAUDE_DESKTOP_FPR" ]; then
+        error "La clave descargada de Anthropic no tiene la huella esperada (${fpr:-ninguna}); no se añade el repositorio."
+        return 1
+    fi
+    sudo install -m 644 "$tmp" "$CLAUDE_DESKTOP_KEY"
+    echo "deb [arch=amd64,arm64 signed-by=${CLAUDE_DESKTOP_KEY}] https://downloads.claude.ai/claude-desktop/apt/stable stable main" \
+        | sudo tee /etc/apt/sources.list.d/claude-desktop.list >/dev/null
+    pkg_refresh
+    pkg_install claude-desktop
+}
+register_item claude-desktop "Claude Desktop (app de escritorio)" v_claude_desktop i_claude_desktop utilidades-base
+describe_claude
+
+# Status line de Claude Code (barras de contexto y límites de 5 h / semanal), igual en ambas distros
+register_item claude-statusline "Status line de Claude Code (contexto y límites)" v_claude_statusline i_claude_statusline
+describe_claude_statusline
 
 # Hermes Agent (Nous Research). --skip-setup evita el asistente interactivo: queda como paso manual.
 v_hermes() { has_cmd hermes; }
@@ -95,9 +126,11 @@ i_gh() {
 }
 register_item gh "GitHub CLI (gh)" v_gh i_gh utilidades-base
 
-# --- Playwright CLI (comando: playwright-cli) y herdr: iguales en Ubuntu y Manjaro ---
+# --- Playwright CLI (comando: playwright-cli) y herdr (CLI y/o App): iguales en Ubuntu y Manjaro ---
 register_npm playwright-cli "Playwright CLI" playwright-cli "@playwright/cli@latest" nvm-node
-register_item herdr "herdr (multiplexor de agentes de IA)" v_herdr i_herdr utilidades-base
+register_item herdr     "herdr CLI (terminal)"   v_herdr     i_herdr     utilidades-base
+register_item herdr-app "herdr App (escritorio)" v_herdr_app i_herdr_app utilidades-base
+describe_herdr
 
 # --- PATH en bash (el de zsh se configura en el módulo 06, después de Oh My Zsh) ---
 v_entorno_bash() { path_entries_ok "$HOME/.profile" "$HOME/.bashrc"; }

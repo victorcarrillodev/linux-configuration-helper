@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# manjaro/07-productividad.sh — AppFlowy y WhatsDesk (AUR).
+# manjaro/07-productividad.sh — WhatsDesk y Espanso (AUR).
 
-section 07 "PRODUCTIVIDAD" "AppFlowy (con respaldo semanal a GitHub) y WhatsApp Desktop (WhatsDesk)"
+section 07 "PRODUCTIVIDAD" "WhatsApp Desktop (WhatsDesk) y Espanso (expansor de texto)"
 
-register_aur appflowy "AppFlowy" "" appflowy-bin
-
-# Respaldo semanal de AppFlowy a GitHub (script + daemon): igual en Ubuntu y Manjaro (funciones en comun/)
-register_item appflowy-backup "Respaldo semanal de AppFlowy a GitHub (daemon)" v_appflowy_backup i_appflowy_backup base-devel
 register_aur whatsdesk "WhatsDesk (WhatsApp)" whatsdesk whatsdesk-bin
+
+# --- Espanso: AUR espanso-wayland o espanso-x11 según la sesión gráfica (se compila con Rust) ---
+i_espanso() {
+    local pkg="espanso-$(espanso_flavor)"
+    info "Sesión $(espanso_flavor): se instala ${pkg} (se compila; puede tardar unos minutos)."
+    aur_install "$pkg"
+    espanso_setup
+}
+register_item espanso "Espanso (expansor de texto)" v_espanso i_espanso yay
+describe_espanso
