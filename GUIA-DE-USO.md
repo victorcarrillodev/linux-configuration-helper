@@ -354,7 +354,35 @@ antes de cada cambio se guarda una copia `~/.claude/settings.json.bak-<fecha>`.
 > Algunos instalan hooks globales en cada herramienta y pueden romper el prompt caching. Si quieres
 > probar uno, mide con `/cost` las mismas tareas con y sin él.
 
-## 14. Referencia rápida
+## 14. Neovim como editor de código (LazyVim)
+
+El ítem `nvim-config` deja Neovim con aspecto y funciones de editor de código usando
+[LazyVim](https://www.lazyvim.org): pantalla de inicio «NEOVIM» con menú, árbol de archivos a la
+izquierda con pestañas File / Buffers / Git, pestañas arriba, barra de estado, tema VS Code,
+resaltado con treesitter, autocompletado, LSP, ESLint y Prettier para TypeScript/React y Tailwind.
+
+- La configuración vive en `nvim/` de este repositorio (starter oficial de LazyVim). Los extras se
+  activan en `nvim/lua/config/lazy.lua` y el aspecto se ajusta en `nvim/lua/plugins/aspecto.lua`.
+- Si ya tenías otra configuración, se mueve a `~/.config/nvim.bak-<fecha>` (y los datos, estado y
+  caché de Neovim a `~/.local/share/nvim.bak-<fecha>`, etc.). Para volver atrás, borra las carpetas
+  nuevas y quita el sufijo `.bak-<fecha>` a las antiguas.
+- La primera vez que abras archivos de un lenguaje, Mason descarga sus servidores (LSP) y se compila
+  el resaltado: tarda un poco solo esa vez.
+- El terminal debe usar una Nerd Font (JetBrainsMono en Manjaro, CaskaydiaCove en Ubuntu) para ver
+  los iconos.
+
+| Atajo | Acción |
+|---|---|
+| `Espacio e` | Mostrar u ocultar el árbol de archivos |
+| `Espacio Espacio` | Buscar archivo |
+| `Espacio /` | Buscar texto en el proyecto |
+| `Shift+h` / `Shift+l` | Pestaña anterior / siguiente |
+| `gd` · `gr` · `K` | Ir a definición · referencias · documentación |
+| `Espacio gg` | lazygit |
+| `Espacio` (y esperar) | Menú con todos los atajos |
+| `:LazyExtras` | Activar más lenguajes y herramientas |
+
+## 15. Referencia rápida
 
 ```bash
 ./init.sh --ayuda                                  # todas las opciones

@@ -84,6 +84,6 @@ describe_herdr
 register_pkg neovim  "Neovim (editor en terminal)"           repo "nvim!"    neovim ripgrep fd
 register_pkg lazygit "lazygit (Git visual en terminal)"      repo "lazygit!" lazygit
 register_pkg yazi    "Yazi (gestor de archivos en terminal)" repo "yazi!"    yazi fd ripgrep fzf zoxide jq poppler
-register_item nvim-config "Neovim como editor de código (configuración)" v_nvim_config i_nvim_config neovim
+register_item nvim-config "Neovim como editor de código (LazyVim)" v_nvim_config i_nvim_config neovim nodejs
 describe_terminal_tools
 describe_nvim_config

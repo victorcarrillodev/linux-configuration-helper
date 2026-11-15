@@ -34,14 +34,19 @@ describe_terminal_tools() {
     describe yazi    "Gestor de archivos para la terminal, muy rápido (Rust y E/S asíncrona): navega carpetas con el teclado y previsualiza imágenes, PDF, vídeos y código. Comando: yazi"
 }
 
-# --- Configuración de Neovim tipo editor de código (nvim/ del repositorio) ---
-# Copia nvim/ a ~/.config/nvim (lazy.nvim + snacks dashboard, neo-tree con pestañas File/Buffers/Git,
-# lualine, bufferline, tema VS Code, treesitter, Mason + LSP y blink.cmp) y descarga los plugins.
-# Si ya había otra configuración, se mueve a ~/.config/nvim.bak-<fecha> antes de copiar.
-# lazy-lock.json lo genera lazy.nvim en tu equipo y no se compara.
+# --- Neovim como editor de código: LazyVim (nvim/ del repositorio) ---
+# nvim/ es el starter oficial de LazyVim (github.com/LazyVim/starter) con:
+#   · extras activados en lua/config/lazy.lua: neo-tree, TypeScript, Tailwind, JSON, ESLint y Prettier
+#   · lua/plugins/aspecto.lua: tema VS Code, inicio «NEOVIM» con menú f/n/g/r/p/q y neo-tree con
+#     pestañas File/Buffers/Git que se abre solo al iniciar sin archivos
+# Si ya había OTRA configuración, se mueven a «.bak-<fecha>» ~/.config/nvim y también los datos,
+# estado y caché de Neovim (como recomienda LazyVim), para poder volver atrás.
+# lazy-lock.json y lazyvim.json los genera LazyVim en tu equipo y no se comparan.
 NVIM_CFG_SRC="${SCRIPT_DIR}/nvim"
 NVIM_CFG_DST="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
-NVIM_LAZY_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy"
+NVIM_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+NVIM_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nvim"
+NVIM_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/nvim"
 
 nvim_config_same() {
     local f
@@ -50,33 +55,39 @@ nvim_config_same() {
     done < <(cd "$NVIM_CFG_SRC" && find . -type f -printf '%P\n')
 }
 v_nvim_config() {
-    nvim_config_same && [ -d "${NVIM_LAZY_DIR}/snacks.nvim" ] && [ -d "${NVIM_LAZY_DIR}/neo-tree.nvim" ] \
-        && has_cmd tree-sitter
+    nvim_config_same && [ -d "${NVIM_DATA_DIR}/lazy/LazyVim" ] \
+        && [ -d "${NVIM_DATA_DIR}/lazy/snacks.nvim" ] && [ -d "${NVIM_DATA_DIR}/lazy/neo-tree.nvim" ]
 }
 i_nvim_config() {
     has_cmd nvim || { error "Neovim (comando nvim) no está disponible."; return 1; }
-    # Extras: tree-sitter (compila el resaltado), npm (Mason instala ahí los LSP de JS/TS) y Nerd Font
+    refresh_env
+    # Extras que pide LazyVim: tree-sitter (compila el resaltado) y Nerd Font (iconos). npm lo usa
+    # Mason para los servidores de JS/TS: en Manjaro se añade al Node LTS (ítem nodejs); en Ubuntu
+    # ya viene con nvm-node. Ubuntu usa la CascadiaCode Nerd Font (ítem fuente-cascadia).
     case "$DISTRO_ID" in
         manjaro) pkg_install tree-sitter-cli npm ttf-jetbrains-mono-nerd ;;
         ubuntu)
             if ! has_cmd tree-sitter; then
                 if has_cmd npm; then npm install -g tree-sitter-cli
-                else warn "Sin npm no se instala tree-sitter-cli: el resaltado de sintaxis será básico."
+                else warn "Sin npm no se instala tree-sitter-cli: LazyVim avisará en :checkhealth."
                 fi
             fi ;;
     esac
     if [ -e "$NVIM_CFG_DST" ] && ! nvim_config_same; then
-        local bak; bak="${NVIM_CFG_DST}.bak-$(date +%Y%m%d-%H%M%S)"
-        info "Guardando tu configuración anterior de Neovim en ${bak}"
-        mv "$NVIM_CFG_DST" "$bak"
+        local d ts; ts="$(date +%Y%m%d-%H%M%S)"
+        for d in "$NVIM_CFG_DST" "$NVIM_DATA_DIR" "$NVIM_STATE_DIR" "$NVIM_CACHE_DIR"; do
+            [ -e "$d" ] || continue
+            info "Respaldando ${d} en ${d}.bak-${ts}"
+            mv "$d" "${d}.bak-${ts}"
+        done
     fi
     mkdir -p "$NVIM_CFG_DST"
     cp -r "${NVIM_CFG_SRC}/." "$NVIM_CFG_DST/"
-    info "Descargando los plugins de Neovim (lazy.nvim)…"
+    info "Descargando LazyVim y sus plugins…"
     nvim --headless "+Lazy! sync" +qa
 }
 describe_nvim_config() {
-    describe nvim-config "Configura Neovim como editor de código (estilo Fazt): pantalla de inicio con menú, árbol de archivos con pestañas File/Buffers/Git, pestañas arriba, barra de estado, tema VS Code, resaltado, autocompletado y LSP (TypeScript, ESLint, Tailwind…). Atajos: Espacio e (árbol), Ctrl+p (archivos), Espacio / (texto). Guarda tu configuración anterior en ~/.config/nvim.bak-<fecha>."
+    describe nvim-config "Convierte Neovim en un editor de código con LazyVim: inicio con menú, árbol de archivos con pestañas File/Buffers/Git, pestañas, barra de estado, tema VS Code, resaltado, autocompletado, LSP, ESLint y Prettier para TypeScript/React y Tailwind. Atajos: Espacio e (árbol), Espacio Espacio (archivos), Espacio / (texto). Respalda tu configuración anterior en ~/.config/nvim.bak-<fecha>."
 }
 
 # --- Claude: app de escritorio y CLI son ítems independientes (uno, otro o ambos) ---
