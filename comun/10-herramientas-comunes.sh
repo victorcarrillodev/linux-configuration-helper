@@ -34,6 +34,51 @@ describe_terminal_tools() {
     describe yazi    "Gestor de archivos para la terminal, muy rápido (Rust y E/S asíncrona): navega carpetas con el teclado y previsualiza imágenes, PDF, vídeos y código. Comando: yazi"
 }
 
+# --- Configuración de Neovim tipo editor de código (nvim/ del repositorio) ---
+# Copia nvim/ a ~/.config/nvim (lazy.nvim + snacks dashboard, neo-tree con pestañas File/Buffers/Git,
+# lualine, bufferline, tema VS Code, treesitter, Mason + LSP y blink.cmp) y descarga los plugins.
+# Si ya había otra configuración, se mueve a ~/.config/nvim.bak-<fecha> antes de copiar.
+# lazy-lock.json lo genera lazy.nvim en tu equipo y no se compara.
+NVIM_CFG_SRC="${SCRIPT_DIR}/nvim"
+NVIM_CFG_DST="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+NVIM_LAZY_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy"
+
+nvim_config_same() {
+    local f
+    while IFS= read -r f; do
+        cmp -s "${NVIM_CFG_SRC}/${f}" "${NVIM_CFG_DST}/${f}" || return 1
+    done < <(cd "$NVIM_CFG_SRC" && find . -type f -printf '%P\n')
+}
+v_nvim_config() {
+    nvim_config_same && [ -d "${NVIM_LAZY_DIR}/snacks.nvim" ] && [ -d "${NVIM_LAZY_DIR}/neo-tree.nvim" ] \
+        && has_cmd tree-sitter
+}
+i_nvim_config() {
+    has_cmd nvim || { error "Neovim (comando nvim) no está disponible."; return 1; }
+    # Extras: tree-sitter (compila el resaltado), npm (Mason instala ahí los LSP de JS/TS) y Nerd Font
+    case "$DISTRO_ID" in
+        manjaro) pkg_install tree-sitter-cli npm ttf-jetbrains-mono-nerd ;;
+        ubuntu)
+            if ! has_cmd tree-sitter; then
+                if has_cmd npm; then npm install -g tree-sitter-cli
+                else warn "Sin npm no se instala tree-sitter-cli: el resaltado de sintaxis será básico."
+                fi
+            fi ;;
+    esac
+    if [ -e "$NVIM_CFG_DST" ] && ! nvim_config_same; then
+        local bak; bak="${NVIM_CFG_DST}.bak-$(date +%Y%m%d-%H%M%S)"
+        info "Guardando tu configuración anterior de Neovim en ${bak}"
+        mv "$NVIM_CFG_DST" "$bak"
+    fi
+    mkdir -p "$NVIM_CFG_DST"
+    cp -r "${NVIM_CFG_SRC}/." "$NVIM_CFG_DST/"
+    info "Descargando los plugins de Neovim (lazy.nvim)…"
+    nvim --headless "+Lazy! sync" +qa
+}
+describe_nvim_config() {
+    describe nvim-config "Configura Neovim como editor de código (estilo Fazt): pantalla de inicio con menú, árbol de archivos con pestañas File/Buffers/Git, pestañas arriba, barra de estado, tema VS Code, resaltado, autocompletado y LSP (TypeScript, ESLint, Tailwind…). Atajos: Espacio e (árbol), Ctrl+p (archivos), Espacio / (texto). Guarda tu configuración anterior en ~/.config/nvim.bak-<fecha>."
+}
+
 # --- Claude: app de escritorio y CLI son ítems independientes (uno, otro o ambos) ---
 describe_claude() {
     describe claude-code    "Claude Code para la terminal: agente de programación de Anthropic que entiende tu proyecto, edita archivos, ejecuta comandos y hace commits desde la línea de comandos. Comando: claude"

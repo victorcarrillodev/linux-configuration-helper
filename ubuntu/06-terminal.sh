@@ -138,7 +138,9 @@ i_yazi() {
     sudo install -m 755 "${dir}/yazi-${arch}-unknown-linux-musl/ya"   /usr/local/bin/ya
 }
 register_item yazi "Yazi (gestor de archivos en terminal)" v_yazi i_yazi utilidades-base
+register_item nvim-config "Neovim como editor de código (configuración)" v_nvim_config i_nvim_config neovim
 describe_terminal_tools
+describe_nvim_config
 
 # --- Powerlevel10k y plugins de Zsh ---
 v_p10k() {
