@@ -38,6 +38,7 @@ require("lazy").setup({
     -- version = "*", -- try installing the latest stable version for plugins that support semver
   },
   install = { colorscheme = { "vscode", "habamax" } },
+  rocks = { enabled = false }, -- ningún plugin usa luarocks: evita el error de :checkhealth lazy
   checker = {
     enabled = true, -- check for plugin updates periodically
     notify = false, -- notify on update
