@@ -7,19 +7,21 @@ section 03 "DESARROLLO" "Node.js LTS, pnpm, Bun, Rust, Flutter, GitHub CLI, Play
 
 # --- Node.js LTS (repo de Manjaro) ---
 # El repo trae «nodejs» (versión Current) y «nodejs-lts» (LTS). Si hay un nodejs no-LTS, se
-# desinstala y queda la LTS. Se verifica contra /usr/bin/node (ignora cualquier nvm del usuario).
+# desinstala y queda la LTS, junto con «npm» (paquete aparte). Se verifica contra /usr/bin/node (ignora cualquier nvm del usuario).
 v_node() {
     pkg_installed nodejs-lts || return 1
     [ -x /usr/bin/node ] || return 1
     cmd_works /usr/bin/node --version || return 1
     [ -n "$(/usr/bin/node -p 'process.release.lts || ""' 2>/dev/null)" ] || return 1
+    # npm es un paquete aparte en Arch/Manjaro (nodejs-lts no lo trae); lo usan entorno-js y Mason
+    pkg_installed npm && cmd_works npm --version
 }
 i_node() {
     if pkg_installed nodejs; then   # la versión Current (no LTS) está instalada: fuera
         info "Retirando «nodejs» (versión que no es LTS)…"
         sudo pacman -Rns --noconfirm nodejs || sudo pacman -Rdd --noconfirm nodejs
     fi
-    pkg_install nodejs-lts
+    pkg_install nodejs-lts npm
 }
 register_item nodejs "Node.js LTS + npm" v_node i_node
 register_pkg pnpm   "pnpm"          repo "pnpm!" pnpm

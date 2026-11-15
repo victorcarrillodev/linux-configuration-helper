@@ -47,6 +47,10 @@ NVIM_CFG_DST="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
 NVIM_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
 NVIM_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nvim"
 NVIM_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/nvim"
+# Diccionario de español para el corrector (spelllang = es,en en nvim/lua/config/options.lua).
+# Sin él, LazyVim subraya como error todo el texto en español de los Markdown.
+NVIM_SPELL_DIR="${NVIM_DATA_DIR}/site/spell"
+NVIM_SPELL_URL="https://ftp.nluug.nl/pub/vim/runtime/spell"
 
 nvim_config_same() {
     local f
@@ -56,16 +60,19 @@ nvim_config_same() {
 }
 v_nvim_config() {
     nvim_config_same && [ -d "${NVIM_DATA_DIR}/lazy/LazyVim" ] \
-        && [ -d "${NVIM_DATA_DIR}/lazy/snacks.nvim" ] && [ -d "${NVIM_DATA_DIR}/lazy/neo-tree.nvim" ]
+        && [ -d "${NVIM_DATA_DIR}/lazy/snacks.nvim" ] && [ -d "${NVIM_DATA_DIR}/lazy/neo-tree.nvim" ] \
+        && [ -s "${NVIM_SPELL_DIR}/es.utf-8.spl" ] && has_cmd npm
 }
 i_nvim_config() {
     has_cmd nvim || { error "Neovim (comando nvim) no está disponible."; return 1; }
     refresh_env
-    # Extras que pide LazyVim: tree-sitter (compila el resaltado) y Nerd Font (iconos). npm lo usa
-    # Mason para los servidores de JS/TS: en Manjaro se añade al Node LTS (ítem nodejs); en Ubuntu
-    # ya viene con nvm-node. Ubuntu usa la CascadiaCode Nerd Font (ítem fuente-cascadia).
+    # Extras que pide LazyVim: tree-sitter (compila el resaltado) y Nerd Font (iconos). Mason
+    # instala con npm los servidores de TypeScript, ESLint, Tailwind y JSON: sin él fallan con
+    # «Could not find executable npm». npm viene del ítem nodejs (Manjaro) o nvm-node (Ubuntu).
+    # Ubuntu usa la CascadiaCode Nerd Font (ítem fuente-cascadia).
+    has_cmd npm || { error "npm no está disponible: Mason no podría instalar los servidores de JS/TS."; return 1; }
     case "$DISTRO_ID" in
-        manjaro) pkg_install tree-sitter-cli npm ttf-jetbrains-mono-nerd ;;
+        manjaro) pkg_install tree-sitter-cli ttf-jetbrains-mono-nerd ;;
         ubuntu)
             if ! has_cmd tree-sitter; then
                 if has_cmd npm; then npm install -g tree-sitter-cli
@@ -83,6 +90,13 @@ i_nvim_config() {
     fi
     mkdir -p "$NVIM_CFG_DST"
     cp -r "${NVIM_CFG_SRC}/." "$NVIM_CFG_DST/"
+    local f
+    mkdir -p "$NVIM_SPELL_DIR"
+    for f in es.utf-8.spl es.utf-8.sug; do
+        [ -s "${NVIM_SPELL_DIR}/${f}" ] && continue
+        download "${NVIM_SPELL_URL}/${f}" "${NVIM_SPELL_DIR}/${f}" \
+            || warn "No se pudo descargar el diccionario ${f}: Neovim lo pedirá al abrir un Markdown."
+    done
     info "Descargando LazyVim y sus plugins…"
     nvim --headless "+Lazy! sync" +qa
 }

@@ -368,6 +368,11 @@ resaltado con treesitter, autocompletado, LSP, ESLint y Prettier para TypeScript
   nuevas y quita el sufijo `.bak-<fecha>` a las antiguas.
 - La primera vez que abras archivos de un lenguaje, Mason descarga sus servidores (LSP) y se compila
   el resaltado: tarda un poco solo esa vez.
+- El corrector ortográfico está en español e inglés (`spelllang = es,en`); el diccionario de
+  español se descarga a `~/.local/share/nvim/site/spell`. Sin él, LazyVim subraya como error todo
+  el texto en español de los Markdown.
+- Si aparece «mason-lspconfig.nvim failed to install vtsls/eslint/tailwindcss/jsonls», falta `npm`:
+  en Manjaro `sudo pacman -S npm` (o vuelve a ejecutar el ítem `nodejs`) y reabre `nvim`.
 - El terminal debe usar una Nerd Font (JetBrainsMono en Manjaro, CaskaydiaCove en Ubuntu) para ver
   los iconos.
 
