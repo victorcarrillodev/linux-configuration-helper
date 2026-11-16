@@ -85,6 +85,7 @@ mismo comportamiento en ambas distros.
 | uv (gestor de Python) | `uv` | instalador oficial `astral.sh/uv/install.sh` → `~/.local/bin` (sin tocar los rc; módulo 03) | pacman `uv` (módulo 06) | `uv --version` | utilidades base (solo Ubuntu) |
 | Claude Code: ahorro de tokens | `claude-ahorro` | `claude/configurar-claude.py --ahorro`: añade reglas `permissions.deny` (node_modules, dist, lockfiles, minificados…) a `~/.claude/settings.json` (con copia `.bak-<fecha>`), un bloque con marcadores en `~/.claude/CLAUDE.md` e instala `claude/claude-proyecto.sh` como `~/.local/bin/claude-proyecto` | igual | reglas y bloque presentes, `claude-proyecto` idéntico al del repo | `claude-code` |
 | Serena (índice de código, MCP) | `serena` | `uv tool install --force -p 3.13 serena-agent`; `claude mcp add --scope user serena -- <ruta>/serena start-mcp-server --context claude-code --project-from-cwd --open-web-dashboard False`; hooks `serena-hooks remind/activate/cleanup` y `env.MCP_TIMEOUT=60000` en `~/.claude/settings.json` | igual | `serena --help`, `serena-hooks` en el PATH, MCP registrado en `~/.claude.json` con ejecutable válido y hooks presentes | `uv` · `claude-code` |
+| Graphify (grafo de conocimiento) | `graphify` | `uv tool install --force -p 3.13 graphifyy`; `graphify install --platform claude` (skill en `~/.claude/skills/graphify` y su registro en `~/.claude/CLAUDE.md`; sin hooks) | igual | `graphify --help` y `~/.claude/skills/graphify/SKILL.md` presente | `uv` · `claude-code` |
 | Docker + Compose + Buildx | `docker` | repositorio oficial `docker-ce` + servicio | pacman `docker docker-compose docker-buildx` + servicio | `docker --version`, `docker compose version` y servicio habilitado | utilidades base (solo Ubuntu) |
 | Docker sin sudo | `docker-sin-sudo` | pasos post-instalación oficiales: grupo `docker` (lo crea si falta) + `usermod -aG docker`, `~/.docker` a tu nombre, `docker` y `containerd` al arranque | igual | grupo existe y te incluye, `~/.docker` es tuyo y servicio habilitado | `docker` |
 | Espanso (expansor de texto) | `espanso` | `.deb` oficial de GitHub `espanso-debian-<wayland\|x11>-amd64` según la sesión; `setcap` en Wayland; `espanso service register` + `start` (módulo 08) | AUR `espanso-wayland` o `espanso-x11` según la sesión (se compila) + mismos pasos (módulo 07) | `espanso --version` y servicio de usuario registrado | utilidades base / `yay` |
@@ -222,8 +223,8 @@ docker ───────────> docker-sin-sudo
 nvm-node ─────────> pnpm · gemini-cli · claude-code · codex · opencode · playwright-cli · nvim-config
 neovim ───────────> nvim-config
 fuente-cascadia ──> nvim-config
-claude-code ──────> claude-ahorro · serena
-uv ───────────────> serena
+claude-code ──────> claude-ahorro · serena · graphify
+uv ───────────────> serena · graphify
 zsh-paquetes ─────> oh-my-zsh · fuente-cascadia · fuente-meslo · shell-zsh
 oh-my-zsh ────────> p10k
 p10k ─────────────> zshrc
@@ -239,8 +240,8 @@ nodejs ──────> entorno-js · nvim-config
 neovim ──────> nvim-config
 docker ──────> docker-sin-sudo
 entorno-js ──> playwright-cli
-claude-code ─> claude-ahorro · serena
-uv ──────────> serena
+claude-code ─> claude-ahorro · serena · graphify
+uv ──────────> serena · graphify
 ```
 
 ---

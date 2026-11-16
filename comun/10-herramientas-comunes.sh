@@ -245,6 +245,26 @@ i_serena() {
     python3 "$CLAUDE_CFG_PY" --serena "$hooks"
 }
 
+# Graphify: convierte un proyecto en un grafo de conocimiento (código + documentación) que Claude
+# consulta para orientarse antes de leer archivos: alcance de un cambio, piezas centrales y qué
+# spec o documento menciona algo. Complementa a Serena (que lee y edita símbolos concretos).
+# Se instala con uv (paquete «graphifyy»; el comando es «graphify») y deja la skill /graphify en
+# ~/.claude/skills para todos los proyectos. No instala hooks: el grafo de cada proyecto se genera
+# a mano con «graphify update .» (solo código, local y sin IA) o con «/graphify .» dentro de Claude.
+v_graphify() {
+    cmd_works graphify --help || return 1
+    [ -f "${HOME}/.claude/skills/graphify/SKILL.md" ]
+}
+i_graphify() {
+    has_cmd uv     || { error "uv no está disponible."; return 1; }
+    has_cmd claude || { error "Claude Code (comando claude) no está disponible."; return 1; }
+    # --force: reinstala limpio si una instalación anterior quedó rota
+    uv tool install --force -p 3.13 graphifyy
+    refresh_env
+    has_cmd graphify || { error "No se encontró el comando graphify tras instalarlo."; return 1; }
+    graphify install --platform claude
+}
+
 # Ajustes globales de Claude Code para gastar menos tokens:
 #   · ~/.claude/settings.json → permissions.deny para node_modules, dist, lockfiles, *.min.js…
 #   · ~/.claude/CLAUDE.md     → bloque con pautas de ahorro (usar Serena, subagentes, salidas cortas)
@@ -263,6 +283,7 @@ i_claude_ahorro() {
 describe_claude_tokens() {
     describe uv            "uv: gestor de paquetes y versiones de Python, muy rápido (Astral). Lo usa Serena para instalarse y actualizarse. Comandos: uv, uvx"
     describe serena        "Serena: índice de código para Claude Code (MCP con servidores de lenguaje). Claude busca funciones, clases y referencias sin leer archivos completos, y así gasta menos tokens. Queda activo en todos los proyectos con sus hooks. Comando: serena"
+    describe graphify      "Graphify: grafo de conocimiento del proyecto (código y documentación) para Claude Code. Sirve para orientarse antes de leer archivos: qué toca un cambio, piezas centrales y qué documento menciona algo. Instala la skill /graphify para todos los proyectos. Comandos: graphify, graphify-mcp"
     describe claude-ahorro "Ajustes de Claude Code para ahorrar tokens: bloquea la lectura de node_modules, dist, lockfiles y minificados; añade pautas de ahorro a ~/.claude/CLAUDE.md; e instala el comando claude-proyecto (CLAUDE.md + índice de Serena por proyecto)."
 }
 

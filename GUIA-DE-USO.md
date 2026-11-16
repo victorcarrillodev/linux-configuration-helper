@@ -287,10 +287,11 @@ dejan Claude Code configurado para gastar menos tokens **en todos tus proyectos*
 |---|---|
 | `uv` | Gestor de Python de Astral. Serena se instala y actualiza con él. |
 | `serena` | [Serena](https://github.com/oraios/serena) instalado con `uv tool install -p 3.13 serena-agent` y registrado en Claude Code **para todos los proyectos** (`claude mcp add --scope user`, contexto `claude-code`, `--project-from-cwd` y sin abrir el panel web). Añade a `~/.claude/settings.json` los hooks que recomienda Serena (`remind`, `activate`, `cleanup`) y `MCP_TIMEOUT=60000`. |
+| `graphify` | [Graphify](https://github.com/Graphify-Labs/graphify) instalado con `uv tool install -p 3.13 graphifyy` y la skill `/graphify` para todos los proyectos. Crea un grafo de conocimiento del proyecto (código y documentación) para orientarse antes de leer archivos; complementa a Serena, que lee y edita símbolos concretos. No instala hooks. |
 | `claude-ahorro` | En `~/.claude/settings.json`, reglas `permissions.deny` para que Claude no lea `node_modules`, `dist`, `.next`, `.venv`, `coverage`, `__pycache__`, minificados, `*.map` ni lockfiles. Añade un bloque con pautas de ahorro a `~/.claude/CLAUDE.md` e instala el comando `claude-proyecto`. |
 
 ```bash
-./init.sh --solo uv --solo claude-ahorro --solo serena    # solo esto
+./init.sh --solo uv --solo claude-ahorro --solo serena --solo graphify    # solo esto
 ```
 
 **Cómo se garantiza que siga funcionando.** Cada ítem tiene una verificación real: `serena --help`
@@ -347,6 +348,8 @@ antes de cada cambio se guarda una copia `~/.claude/settings.json.bak-<fecha>`.
 | Claude necesita leer algo bloqueado (p. ej. un lockfile) | Quita esa regla de `permissions.deny` en `~/.claude/settings.json` (las reglas `deny` tienen prioridad sobre `allow`). Si vuelves a ejecutar `./init.sh` con `claude-ahorro`, la regla se restaura. |
 | Bloquear más carpetas en un proyecto | Añade reglas `deny` en `.claude/settings.json` del proyecto, p. ej. `"Read(./build/**)"`. `build/` y `target/` no se bloquean de forma global porque en algunos proyectos son código. |
 | Actualizar Serena | `uv tool upgrade serena-agent` (o `./init.sh --solo serena`). |
+| Generar o actualizar el grafo de un proyecto | `graphify update .` en la carpeta del proyecto (solo código, local y sin IA; deja `graphify-out/`). Para incluir la documentación, `/graphify .` dentro de Claude. Añade `graphify-out/` a `.gitignore` o a `.git/info/exclude`. |
+| Actualizar o quitar Graphify | `uv tool upgrade graphifyy` (o `./init.sh --solo graphify`); para quitarlo, `graphify uninstall` y `uv tool uninstall graphifyy`. |
 | Quitar Serena | `claude mcp remove --scope user serena`, `uv tool uninstall serena-agent` y borrar los hooks `serena-hooks` de `~/.claude/settings.json`. |
 
 > **No se instalan «token optimizers» de terceros.** Prometen ahorros del 60–99%, pero miden contra
