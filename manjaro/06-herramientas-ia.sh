@@ -17,6 +17,7 @@ describe_claude_statusline
 # Ahorro de tokens: uv (repo oficial) → Serena (índice de código, MCP) + ajustes globales de Claude Code
 register_pkg  uv            "uv (gestor de Python, lo usa Serena)"            repo "uv!" uv
 register_item claude-ahorro "Claude Code: ajustes para ahorrar tokens"        v_claude_ahorro i_claude_ahorro claude-code
+register_item claude-salida  "Claude Code: salida concisa (verbose off)"     v_claude_salida i_claude_salida claude-code
 register_item serena        "Serena: índice de código para Claude Code (MCP)" v_serena        i_serena        uv claude-code
 register_item graphify      "Graphify: grafo de conocimiento para Claude Code" v_graphify      i_graphify      uv claude-code
 describe_claude_tokens

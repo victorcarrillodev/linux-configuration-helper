@@ -289,6 +289,7 @@ dejan Claude Code configurado para gastar menos tokens **en todos tus proyectos*
 | `serena` | [Serena](https://github.com/oraios/serena) instalado con `uv tool install -p 3.13 serena-agent` y registrado en Claude Code **para todos los proyectos** (`claude mcp add --scope user`, contexto `claude-code`, `--project-from-cwd` y sin abrir el panel web). Añade a `~/.claude/settings.json` los hooks que recomienda Serena (`remind`, `activate`, `cleanup`) y `MCP_TIMEOUT=60000`. |
 | `graphify` | [Graphify](https://github.com/Graphify-Labs/graphify) instalado con `uv tool install -p 3.13 graphifyy` y la skill `/graphify` para todos los proyectos. Crea un grafo de conocimiento del proyecto (código y documentación) para orientarse antes de leer archivos; complementa a Serena, que lee y edita símbolos concretos. No instala hooks. |
 | `claude-ahorro` | En `~/.claude/settings.json`, reglas `permissions.deny` para que Claude no lea `node_modules`, `dist`, `.next`, `.venv`, `coverage`, `__pycache__`, minificados, `*.map` ni lockfiles. Añade un bloque con pautas de ahorro a `~/.claude/CLAUDE.md` e instala el comando `claude-proyecto`. |
+| `claude-salida` | En `~/.claude/settings.json`, `verbose: false` y `outputStyle: "Concise"`: es lo que `/config` guarda al poner «Verbose output» en false y «Output style» en Concise. Se aplica en cada instalación y no toca el resto de ajustes. |
 
 ```bash
 ./init.sh --solo uv --solo claude-ahorro --solo serena --solo graphify    # solo esto

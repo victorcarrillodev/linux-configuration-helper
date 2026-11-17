@@ -6,6 +6,8 @@ Uso:
   configurar-claude.py --comprobar-ahorro            0 si ya está aplicado, 1 si no
   configurar-claude.py --serena <ruta serena-hooks>  hooks de Serena + MCP_TIMEOUT
   configurar-claude.py --comprobar-serena            0 si Serena está registrado y con hooks, 1 si no
+  configurar-claude.py --salida                      /config: «Verbose output» en false y «Output style» en Concise
+  configurar-claude.py --comprobar-salida            0 si ya está aplicado, 1 si no
 
 Antes de escribir settings.json se hace una copia settings.json.bak-<fecha>. Si el JSON está roto,
 no se escribe nada. Los bloques propios se reconocen por su contenido (deny) o por la marca
@@ -65,6 +67,9 @@ HOOK_EVENTS = {
     'SessionEnd': 'cleanup',    # limpia los datos de la sesión
 }
 MCP_TIMEOUT = '60000'
+
+# Lo que /config guarda en ~/.claude/settings.json: «Verbose output» → verbose, «Output style» → outputStyle.
+SALIDA = {'verbose': False, 'outputStyle': 'Concise'}
 
 
 # --- settings.json -------------------------------------------------------------------------------
@@ -135,6 +140,11 @@ def set_hooks(cfg, hooks_bin):
         hooks[event] = groups
 
 
+def salida_pendiente(cfg):
+    """Claves de SALIDA que faltan o tienen otro valor (False no es 0 ni vacío: se compara el tipo)."""
+    return {k: v for k, v in SALIDA.items() if not (k in cfg and type(cfg[k]) is type(v) and cfg[k] == v)}
+
+
 # --- ~/.claude/CLAUDE.md -------------------------------------------------------------------------
 def memory_text():
     if not os.path.exists(MEMORY):
@@ -193,6 +203,19 @@ def main():
         ok = serena_registered() and hooks_ok(cfg) \
             and (cfg.get('env') or {}).get('MCP_TIMEOUT') == MCP_TIMEOUT
         return 0 if ok else 1
+
+    if mode == '--comprobar-salida':
+        return 0 if not salida_pendiente(cfg) else 1
+
+    if mode == '--salida':
+        pendiente = salida_pendiente(cfg)
+        if pendiente:
+            cfg.update(pendiente)
+            save_settings(cfg)
+            print(f'Salida de Claude Code en {SETTINGS}: ' + ', '.join(f'{k}={json.dumps(v)}' for k, v in SALIDA.items()))
+        else:
+            print('La salida de Claude Code ya estaba configurada.')
+        return 0
 
     if mode == '--ahorro':
         missing = [r for r in DENY if r not in deny]

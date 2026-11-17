@@ -280,10 +280,19 @@ i_claude_ahorro() {
     python3 "$CLAUDE_CFG_PY" --ahorro
 }
 
+# Salida de Claude Code (/config): «Verbose output» en false y «Output style» en Concise.
+# Se guarda en ~/.claude/settings.json como verbose=false y outputStyle="Concise".
+v_claude_salida() { python3 "$CLAUDE_CFG_PY" --comprobar-salida; }
+i_claude_salida() {
+    ensure_python3
+    python3 "$CLAUDE_CFG_PY" --salida
+}
+
 describe_claude_tokens() {
     describe uv            "uv: gestor de paquetes y versiones de Python, muy rápido (Astral). Lo usa Serena para instalarse y actualizarse. Comandos: uv, uvx"
     describe serena        "Serena: índice de código para Claude Code (MCP con servidores de lenguaje). Claude busca funciones, clases y referencias sin leer archivos completos, y así gasta menos tokens. Queda activo en todos los proyectos con sus hooks. Comando: serena"
     describe graphify      "Graphify: grafo de conocimiento del proyecto (código y documentación) para Claude Code. Sirve para orientarse antes de leer archivos: qué toca un cambio, piezas centrales y qué documento menciona algo. Instala la skill /graphify para todos los proyectos. Comandos: graphify, graphify-mcp"
+    describe claude-salida "Salida de Claude Code más corta (equivale a /config): «Verbose output» desactivado y «Output style» en Concise. Se guarda en ~/.claude/settings.json (con copia de seguridad)."
     describe claude-ahorro "Ajustes de Claude Code para ahorrar tokens: bloquea la lectura de node_modules, dist, lockfiles y minificados; añade pautas de ahorro a ~/.claude/CLAUDE.md; e instala el comando claude-proyecto (CLAUDE.md + índice de Serena por proyecto)."
 }
 
